@@ -1,0 +1,477 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}申请请假{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<style>
+    .flight-segment {
+        border: 1px solid #ddd;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+    }
+    .segment-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .segment-type {
+        font-weight: bold;
+        color: #007bff;
+    }
+    #map {
+        height: 300px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+    
+    /* 地图图层控制器样式优化 */
+    .leaflet-control-layers {
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .leaflet-control-layers-toggle {
+        background-color: #fff;
+        border-radius: 3px;
+    }
+    .sync-location-btn {
+        margin-top: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="text-un-blue">
+                    <i class="fas fa-calendar-plus me-2"></i>申请请假
+                </h2>
+                <a href="{% url 'leave_management:my_applications' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-history"></i> 查看历史记录
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <form id="leaveApplicationForm" method="post">
+        {% csrf_token %}
+        
+        <!-- 基本信息 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">基本信息</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label for="leave_start_date">休假开始日期 <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="leave_start_date" name="leave_start_date" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label for="leave_end_date">休假结束日期 <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="leave_end_date" name="leave_end_date" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group mb-3">
+                    <label for="leave_reason">休假原因 <span class="text-danger">*</span></label>
+                    <textarea class="form-control" id="leave_reason" name="leave_reason" rows="3" required placeholder="请说明休假原因"></textarea>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 休假地点 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">休假地点</h5>
+            </div>
+            <div class="card-body">
+                <div class="form-group mb-3">
+                    <label for="leave_location">休假地点名称 <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="leave_location" name="leave_location" required placeholder="请输入休假地点（例如：北京市、东京、巴黎等）">
+                        <button type="button" class="btn btn-primary" id="syncLocationBtn">
+                            <i class="fas fa-sync-alt"></i> 同步位置
+                        </button>
+                    </div>
+                    <small class="form-text text-muted">输入地点后点击"同步位置"自动获取经纬度，或直接在地图上点击选择</small>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div id="map"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label for="leave_latitude">纬度</label>
+                            <input type="number" class="form-control" id="leave_latitude" name="leave_latitude" step="0.000001" readonly>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="leave_longitude">经度</label>
+                            <input type="number" class="form-control" id="leave_longitude" name="leave_longitude" step="0.000001" readonly>
+                        </div>
+                        <div class="alert alert-info" id="locationStatus">
+                            <i class="fas fa-info-circle"></i> 请输入地点后点击"同步位置"，或在地图上点击选择位置
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 回国行程 -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">回国行程</h5>
+                <button type="button" class="btn btn-primary btn-sm" onclick="addSegment('outbound')">
+                    <i class="fas fa-plus"></i> 添加行程段
+                </button>
+            </div>
+            <div class="card-body" id="outboundSegments">
+                <!-- 动态生成的行程段 -->
+            </div>
+        </div>
+        
+        <!-- 返回行程 -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">返回任务区行程</h5>
+                <button type="button" class="btn btn-primary btn-sm" onclick="addSegment('return')">
+                    <i class="fas fa-plus"></i> 添加行程段
+                </button>
+            </div>
+            <div class="card-body" id="returnSegments">
+                <!-- 动态生成的行程段 -->
+            </div>
+        </div>
+        
+        <div class="form-group text-center mb-4">
+            <button type="submit" class="btn btn-un-blue btn-lg" id="submitBtn">
+                <i class="fas fa-paper-plane"></i> 提交申请
+            </button>
+            <a href="{% url 'leave_management:my_applications' %}" class="btn btn-secondary btn-lg ms-2">
+                <i class="fas fa-times"></i> 取消
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script>
+    let segmentCount = {
+        outbound: 0,
+        return: 0
+    };
+    
+    let map = null;
+    let marker = null;
+
+    // 初始化地图
+    function initMap() {
+        map = L.map('map').setView([39.9042, 116.4074], 10);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        map.on('click', function(e) {
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+            updateMapMarker(lat, lng);
+            
+            // 反向地理编码：获取点击位置的地点名称
+            reverseGeocode(lat, lng);
+        });
+    }
+    
+    // 更新地图标记
+    function updateMapMarker(lat, lng) {
+        // 清除之前的标记
+        if (marker) {
+            map.removeLayer(marker);
+        }
+        
+        // 添加新标记
+        marker = L.marker([lat, lng]).addTo(map);
+        map.setView([lat, lng], 12);
+        
+        // 更新坐标输入框
+        document.getElementById('leave_latitude').value = lat.toFixed(6);
+        document.getElementById('leave_longitude').value = lng.toFixed(6);
+        
+        // 更新状态
+        document.getElementById('locationStatus').innerHTML = 
+            '<i class="fas fa-check-circle text-success"></i> 位置已选择';
+        document.getElementById('locationStatus').className = 'alert alert-success';
+    }
+    
+    // 反向地理编码功能：根据坐标获取地点名称
+    function reverseGeocode(lat, lng) {
+        // 更新状态
+        document.getElementById('locationStatus').innerHTML = 
+            '<i class="fas fa-spinner fa-spin"></i> 正在获取地点名称...';
+        document.getElementById('locationStatus').className = 'alert alert-info';
+        
+        // 使用Nominatim反向地理编码API
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.display_name) {
+                    // 更新地点名称输入框
+                    document.getElementById('leave_location').value = data.display_name;
+                    
+                    // 更新状态
+                    document.getElementById('locationStatus').innerHTML = 
+                        '<i class="fas fa-check-circle text-success"></i> 位置已选择，地点名称已更新';
+                    document.getElementById('locationStatus').className = 'alert alert-success';
+                } else {
+                    // 如果没有获取到地址信息，保持原有状态但给出提示
+                    document.getElementById('locationStatus').innerHTML = 
+                        '<i class="fas fa-info-circle"></i> 位置已选择（坐标已记录）';
+                    document.getElementById('locationStatus').className = 'alert alert-info';
+                }
+            })
+            .catch(error => {
+                console.error('反向地理编码失败:', error);
+                // 即使反向地理编码失败，也不影响地图标记功能
+                document.getElementById('locationStatus').innerHTML = 
+                    '<i class="fas fa-info-circle"></i> 位置已选择（坐标已记录，获取地名失败）';
+                document.getElementById('locationStatus').className = 'alert alert-info';
+            });
+    }
+    
+    // 同步位置功能
+    document.getElementById('syncLocationBtn').addEventListener('click', function() {
+        const locationName = document.getElementById('leave_location').value.trim();
+        
+        if (!locationName) {
+            alert('请先输入休假地点');
+            return;
+        }
+        
+        // 显示加载状态
+        const btn = this;
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在同步...';
+        
+        document.getElementById('locationStatus').innerHTML = 
+            '<i class="fas fa-spinner fa-spin"></i> 正在获取位置信息...';
+        document.getElementById('locationStatus').className = 'alert alert-info';
+        
+        // 使用Nominatim地理编码API
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationName)}&limit=1`)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.length > 0) {
+                    const lat = parseFloat(data[0].lat);
+                    const lng = parseFloat(data[0].lon);
+                    updateMapMarker(lat, lng);
+                    
+                    // 更新地点名称（使用返回的完整地址）
+                    if (data[0].display_name) {
+                        document.getElementById('leave_location').value = data[0].display_name;
+                    }
+                } else {
+                    alert('未找到该地点，请检查地点名称是否正确或直接在地图上点击选择');
+                    document.getElementById('locationStatus').innerHTML = 
+                        '<i class="fas fa-exclamation-triangle"></i> 未找到该地点';
+                    document.getElementById('locationStatus').className = 'alert alert-warning';
+                }
+            })
+            .catch(error => {
+                console.error('地理编码失败:', error);
+                alert('获取位置失败，请检查网络连接或直接在地图上点击选择');
+                document.getElementById('locationStatus').innerHTML = 
+                    '<i class="fas fa-times-circle"></i> 获取位置失败';
+                document.getElementById('locationStatus').className = 'alert alert-danger';
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            });
+    });
+    
+    // 添加行程段（修复：保留之前填写的内容）
+    function addSegment(type) {
+        segmentCount[type]++;
+        const containerId = type + 'Segments';
+        const container = document.getElementById(containerId);
+        
+        // 创建新的segment元素
+        const segmentDiv = document.createElement('div');
+        segmentDiv.className = 'flight-segment';
+        segmentDiv.setAttribute('data-segment', `${type}-${segmentCount[type]}`);
+        
+        segmentDiv.innerHTML = `
+            <div class="segment-header">
+                <span class="segment-type">
+                    ${type === 'outbound' ? '回国行程' : '返回任务区行程'} 第 ${segmentCount[type]} 段
+                </span>
+                <button type="button" class="btn btn-danger btn-sm" onclick="removeSegment('${type}', ${segmentCount[type]})">
+                    <i class="fas fa-trash"></i> 删除
+                </button>
+            </div>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="form-group mb-3">
+                        <label>出发地 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="${type}_departure_${segmentCount[type]}" required>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group mb-3">
+                        <label>目的地 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="${type}_destination_${segmentCount[type]}" required>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group mb-3">
+                        <label>航班号</label>
+                        <input type="text" class="form-control" name="${type}_flight_number_${segmentCount[type]}" placeholder="例：CA123">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group mb-3">
+                        <label>航班日期</label>
+                        <input type="date" class="form-control" name="${type}_flight_date_${segmentCount[type]}">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group mb-3">
+                        <label>航班时间</label>
+                        <input type="time" class="form-control" name="${type}_flight_time_${segmentCount[type]}">
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // 使用appendChild而不是innerHTML+=，这样可以保留之前的DOM元素和数据
+        container.appendChild(segmentDiv);
+    }
+    
+    // 删除行程段
+    function removeSegment(type, segmentNum) {
+        const segmentElement = document.querySelector(`[data-segment="${type}-${segmentNum}"]`);
+        if (segmentElement) {
+            segmentElement.remove();
+        }
+    }
+    
+    // 提交表单
+    document.getElementById('leaveApplicationForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const submitBtn = document.getElementById('submitBtn');
+        const originalHtml = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 提交中...';
+        
+        // 构建行程数据
+        const formData = new FormData(this);
+        const outboundSegments = [];
+        const returnSegments = [];
+        
+        // 收集回国行程数据
+        for (let i = 1; i <= segmentCount.outbound; i++) {
+            const segmentElement = document.querySelector(`[data-segment="outbound-${i}"]`);
+            if (segmentElement) {
+                const departure = formData.get(`outbound_departure_${i}`);
+                const destination = formData.get(`outbound_destination_${i}`);
+                if (departure && destination) {
+                    outboundSegments.push({
+                        departure: departure,
+                        destination: destination,
+                        flight_number: formData.get(`outbound_flight_number_${i}`) || '',
+                        flight_date: formData.get(`outbound_flight_date_${i}`) || '',
+                        flight_time: formData.get(`outbound_flight_time_${i}`) || ''
+                    });
+                }
+            }
+        }
+        
+        // 收集返回行程数据
+        for (let i = 1; i <= segmentCount.return; i++) {
+            const segmentElement = document.querySelector(`[data-segment="return-${i}"]`);
+            if (segmentElement) {
+                const departure = formData.get(`return_departure_${i}`);
+                const destination = formData.get(`return_destination_${i}`);
+                if (departure && destination) {
+                    returnSegments.push({
+                        departure: departure,
+                        destination: destination,
+                        flight_number: formData.get(`return_flight_number_${i}`) || '',
+                        flight_date: formData.get(`return_flight_date_${i}`) || '',
+                        flight_time: formData.get(`return_flight_time_${i}`) || ''
+                    });
+                }
+            }
+        }
+        
+        // 添加到表单数据
+        formData.append('outbound_segments', JSON.stringify(outboundSegments));
+        formData.append('return_segments', JSON.stringify(returnSegments));
+        
+        // 提交表单
+        fetch('{% url "leave_management:apply_leave" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message || '请假申请已提交！');
+                window.location.href = data.redirect_url;
+            } else {
+                alert('提交失败：' + (data.message || '未知错误'));
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalHtml;
+            }
+        })
+        .catch(error => {
+            console.error('提交失败:', error);
+            alert('提交失败，请重试');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalHtml;
+        });
+    });
+    
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        initMap();
+        
+        // 添加地点名称输入框事件监听，实现双向绑定
+        document.getElementById('leave_location').addEventListener('change', function() {
+            // 当用户手动修改地点名称时，可以选择是否重新同步位置
+            console.log('地点名称已更新，用户可以点击同步位置按钮来更新地图');
+        });
+        
+        // 设置最小日期为今天
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('leave_start_date').min = today;
+        document.getElementById('leave_end_date').min = today;
+        
+        // 动态更新结束日期的最小值
+        document.getElementById('leave_start_date').addEventListener('change', function() {
+            const startDate = this.value;
+            document.getElementById('leave_end_date').min = startDate;
+        });
+    });
+</script>
+{% endblock %}

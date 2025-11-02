@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}个人资料 - 员工管理系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="text-un-blue mb-3">
+                <i class="fas fa-user me-2"></i>个人资料
+            </h2>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- 基本信息 -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-info-circle me-2"></i>基本信息
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">用户名</label>
+                            <p class="fw-bold">{{ user.username }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">邮箱</label>
+                            <p class="fw-bold">{{ user.email|default:"未设置" }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">姓名</label>
+                            <p class="fw-bold">{{ user.first_name }} {{ user.last_name }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">角色</label>
+                            <span class="badge bg-un-blue fs-6">{{ role_display }}</span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">部门</label>
+                            <p class="fw-bold">{{ user.department_rank|default:"未设置" }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">职位</label>
+                            <p class="fw-bold">{{ user.position|default:"未设置" }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">任务区</label>
+                            {% if user.role == 'superuser' %}
+                                <p class="fw-bold text-muted">-</p>
+                            {% elif user.role == 'head_manager' %}
+                                <p class="fw-bold">
+                                    {% for area in user.managed_task_areas.all %}
+                                        <span class="badge bg-primary me-1">{{ area.name }}</span>
+                                    {% empty %}
+                                        <span class="text-muted">未分配</span>
+                                    {% endfor %}
+                                </p>
+                            {% else %}
+                                <p class="fw-bold">
+                                    {% if user.task_area_fk %}
+                                        <span class="badge bg-success">{{ user.task_area_fk.name }}</span>
+                                    {% else %}
+                                        <span class="text-muted">未分配</span>
+                                    {% endif %}
+                                </p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">手机号码</label>
+                            <p class="fw-bold">{{ user.phone_number|default:"未设置" }}</p>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label text-muted">在职时间</label>
+                            <p class="fw-bold">
+                                {% if user.employment_start_date %}
+                                    {{ user.employment_start_date|date:"Y年n月j日" }}
+                                    {% if user.employment_end_date %}
+                                        至 {{ user.employment_end_date|date:"Y年n月j日" }}
+                                    {% else %}
+                                        至今
+                                    {% endif %}
+                                {% else %}
+                                    未设置
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- 护照信息独立区域 -->
+                    <h6 class="text-un-blue mb-3">
+                        <i class="fas fa-passport me-2"></i>护照信息
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">护照姓名拼音</label>
+                            <p class="fw-bold">
+                                {% if user.passport_name_pinyin %}
+                                    {{ user.passport_name_pinyin }}
+                                {% else %}
+                                    <span class="text-muted">未设置</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">护照号码</label>
+                            <p class="fw-bold">
+                                {% if user.passport_number %}
+                                    {{ user.passport_number }}
+                                {% else %}
+                                    <span class="text-muted">未设置</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label text-muted">护照有效期</label>
+                            <p class="fw-bold">
+                                {% if user.passport_issue_date and user.passport_expiry_date %}
+                                    {{ user.passport_issue_date|date:"Y年n月j日" }} 至 {{ user.passport_expiry_date|date:"Y年n月j日" }}
+                                {% elif user.passport_expiry_date %}
+                                    到期日期：{{ user.passport_expiry_date|date:"Y年n月j日" }}
+                                {% elif user.passport_issue_date %}
+                                    签发日期：{{ user.passport_issue_date|date:"Y年n月j日" }}
+                                {% else %}
+                                    <span class="text-muted">未设置</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">注册时间</label>
+                            <p class="fw-bold">{{ user.date_joined|date:"Y年n月j日 H:i" }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">最后登录</label>
+                            <p class="fw-bold">{{ user.last_login|date:"Y年n月j日 H:i"|default:"从未登录" }}</p>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="text-center">
+                        <a href="{% url 'accounts:edit_profile' %}" class="btn btn-un-blue me-2">
+                            <i class="fas fa-edit me-1"></i>编辑资料
+                        </a>
+                        <a href="{% url 'accounts:change_password' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-key me-1"></i>修改密码
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 权限信息 -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-shield-alt me-2"></i>权限信息
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% if permissions.can_view_dashboard %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-home me-2 text-success"></i>查看主页</span>
+                            <i class="fas fa-check text-success"></i>
+                        </div>
+                        {% endif %}
+                        
+                        {% if permissions.can_apply_leave %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-calendar-plus me-2 text-success"></i>申请请假</span>
+                            <i class="fas fa-check text-success"></i>
+                        </div>
+                        {% endif %}
+                        
+                        {% if permissions.can_approve_leave %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-check-circle me-2 text-success"></i>审批请假</span>
+                            <i class="fas fa-check text-success"></i>
+                        </div>
+                        {% endif %}
+                        
+                        {% if permissions.can_view_reports %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-file-alt me-2 text-success"></i>查看报告</span>
+                            <i class="fas fa-check text-success"></i>
+                        </div>
+                        {% endif %}
+                        
+                        {% if permissions.can_manage_employees %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-users-cog me-2 text-success"></i>管理员工</span>
+                            <i class="fas fa-check text-success"></i>
+                        </div>
+                        {% endif %}
+                        
+                        {% if permissions.can_view_location %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-map-marker-alt me-2 text-success"></i>查看位置</span>
+                            <i class="fas fa-check text-success"></i>
+                        </div>
+                        {% endif %}
+                        
+                        {% if permissions.can_send_alerts %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-exclamation-triangle me-2 text-success"></i>发送警报</span>
+                            <i class="fas fa-check text-success"></i>
+                        </div>
+                        {% endif %}
+                        
+
+                        
+                        {% if permissions.can_manage_system %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-cog me-2 text-success"></i>系统管理</span>
+                            <i class="fas fa-check text-success"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,292 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}批量下载 - 员工管理系统{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-select-card {
+        transition: all 0.3s ease;
+        border: 2px solid #e9ecef;
+        cursor: pointer;
+    }
+    
+    .report-select-card:hover {
+        border-color: #0066cc;
+        box-shadow: 0 4px 8px rgba(0,102,204,0.1);
+    }
+    
+    .report-select-card.selected {
+        border-color: #0066cc;
+        background-color: #f0f7ff;
+    }
+    
+    .select-all-btn {
+        margin-bottom: 20px;
+    }
+    
+    .report-checkbox {
+        transform: scale(1.3);
+        cursor: pointer;
+    }
+    
+    .selection-summary {
+        position: sticky;
+        top: 20px;
+        background: white;
+        border: 2px solid #0066cc;
+        border-radius: 8px;
+        padding: 20px;
+    }
+    
+    .stat-badge {
+        display: inline-block;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: 600;
+        margin: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="text-un-blue mb-0">
+                        <i class="fas fa-download me-2"></i>批量下载报告
+                    </h2>
+                    <p class="text-muted mb-0">选择需要批量下载的报告</p>
+                </div>
+                <a href="{% url 'reports:my_reports' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> 返回
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- 左侧：报告选择列表 -->
+        <div class="col-lg-8">
+            <!-- 操作工具栏 -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <button type="button" class="btn btn-outline-primary" id="selectAllBtn">
+                                <i class="fas fa-check-square"></i> 全选
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="clearAllBtn">
+                                <i class="fas fa-times-circle"></i> 清空
+                            </button>
+                        </div>
+                        <div>
+                            <span class="text-muted">共 <strong id="totalCount">{{ reports|length }}</strong> 份报告</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 报告列表 -->
+            <form method="post" id="bulkDownloadForm">
+                {% csrf_token %}
+                
+                {% if reports %}
+                <div id="reportsList">
+                    {% for report in reports %}
+                    <div class="card report-select-card mb-3" data-report-id="{{ report.id }}">
+                        <div class="card-body">
+                            <div class="d-flex align-items-start">
+                                <div class="me-3 mt-1">
+                                    <input type="checkbox" 
+                                           class="form-check-input report-checkbox" 
+                                           name="report_ids" 
+                                           value="{{ report.id }}"
+                                           id="report_{{ report.id }}">
+                                </div>
+                                <div class="flex-grow-1">
+                                    <label for="report_{{ report.id }}" class="mb-0 w-100 cursor-pointer">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h5 class="mb-2">
+                                                    <i class="fas fa-file-alt text-primary me-2"></i>
+                                                    {{ report.get_report_type_display }} - {{ report.report_period }}
+                                                </h5>
+                                                <p class="mb-2 text-muted">
+                                                    <i class="fas fa-user me-1"></i> {{ report.uploader.get_full_name }}
+                                                    <span class="mx-2">|</span>
+                                                    <i class="fas fa-map-marker-alt me-1"></i> {{ report.task_area.name }}
+                                                    <span class="mx-2">|</span>
+                                                    <i class="fas fa-calendar me-1"></i> {{ report.upload_date|date:"Y-m-d H:i" }}
+                                                </p>
+                                                <p class="mb-0">
+                                                    <span class="badge bg-primary">{{ report.file.size|filesizeformat }}</span>
+                                                    {% if report.status == 'submitted' %}
+                                                    <span class="badge bg-info">已提交</span>
+                                                    {% elif report.status == 'reviewed' %}
+                                                    <span class="badge bg-warning">已查看</span>
+                                                    {% elif report.status == 'approved' %}
+                                                    <span class="badge bg-success">已审批</span>
+                                                    {% endif %}
+                                                    {% if not report.is_viewed %}
+                                                    <span class="badge bg-danger">新</span>
+                                                    {% endif %}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted mb-0">暂无可下载的报告</p>
+                    </div>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+
+        <!-- 右侧：选择摘要和下载配置 -->
+        <div class="col-lg-4">
+            <div class="selection-summary">
+                <h5 class="mb-3">
+                    <i class="fas fa-info-circle text-primary me-2"></i>下载配置
+                </h5>
+                
+                <div class="mb-4">
+                    <label class="form-label"><strong>已选择报告</strong></label>
+                    <div class="text-center py-3" style="background-color: #f8f9fa; border-radius: 8px;">
+                        <h2 class="mb-0 text-primary">
+                            <span id="selectedCount">0</span>
+                            <small class="text-muted">份</small>
+                        </h2>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label" for="packageName">
+                        <strong>下载包名称</strong>
+                        <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           id="packageName" 
+                           name="package_name" 
+                           placeholder="输入下载包名称"
+                           value="报告下载_{{ now|date:'Ymd_His' }}">
+                    <small class="text-muted">此名称将作为ZIP文件名</small>
+                </div>
+
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <small>
+                        <strong>提示：</strong>
+                        <br>• 选择需要的报告后点击"生成下载包"
+                        <br>• 系统将自动打包成ZIP文件
+                        <br>• 生成后可立即下载
+                    </small>
+                </div>
+
+                <button type="button" 
+                        class="btn btn-primary w-100 mb-2" 
+                        id="generateBtn"
+                        disabled>
+                    <i class="fas fa-download me-2"></i>生成下载包
+                </button>
+                
+                <a href="{% url 'reports:my_reports' %}" 
+                   class="btn btn-outline-secondary w-100">
+                    <i class="fas fa-times me-2"></i>取消
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // 更新选择计数
+    function updateSelectedCount() {
+        const count = $('.report-checkbox:checked').length;
+        $('#selectedCount').text(count);
+        
+        // 启用/禁用生成按钮
+        if (count > 0) {
+            $('#generateBtn').prop('disabled', false);
+        } else {
+            $('#generateBtn').prop('disabled', true);
+        }
+    }
+    
+    // 复选框变化事件
+    $('.report-checkbox').on('change', function() {
+        const card = $(this).closest('.report-select-card');
+        if ($(this).is(':checked')) {
+            card.addClass('selected');
+        } else {
+            card.removeClass('selected');
+        }
+        updateSelectedCount();
+    });
+    
+    // 点击卡片切换选择
+    $('.report-select-card').on('click', function(e) {
+        if (!$(e.target).is('input')) {
+            const checkbox = $(this).find('.report-checkbox');
+            checkbox.prop('checked', !checkbox.is(':checked')).trigger('change');
+        }
+    });
+    
+    // 全选按钮
+    $('#selectAllBtn').on('click', function() {
+        $('.report-checkbox').prop('checked', true).trigger('change');
+    });
+    
+    // 清空按钮
+    $('#clearAllBtn').on('click', function() {
+        $('.report-checkbox').prop('checked', false).trigger('change');
+    });
+    
+    // 生成下载包按钮
+    $('#generateBtn').on('click', function() {
+        const selectedCount = $('.report-checkbox:checked').length;
+        const packageName = $('#packageName').val().trim();
+        
+        if (selectedCount === 0) {
+            alert('请至少选择一份报告');
+            return;
+        }
+        
+        if (!packageName) {
+            alert('请输入下载包名称');
+            $('#packageName').focus();
+            return;
+        }
+        
+        // 确认提交
+        if (confirm(`确定要打包下载 ${selectedCount} 份报告吗？`)) {
+            // 添加package_name到表单
+            $('#bulkDownloadForm').append(
+                `<input type="hidden" name="package_name" value="${packageName}">`
+            );
+            
+            // 提交表单
+            $('#bulkDownloadForm').submit();
+        }
+    });
+    
+    // 初始化计数
+    updateSelectedCount();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,349 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}用户管理 - 员工管理系统{% endblock %}
+
+{% block extra_css %}
+<style>
+    .user-table {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .search-section {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+    }
+    
+    .role-badge {
+        border-radius: 20px;
+        font-size: 0.75rem;
+    }
+    
+    .status-badge {
+        border-radius: 20px;
+        font-size: 0.75rem;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 5px;
+    }
+    
+    .stats-card {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    
+    @media (max-width: 768px) {
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .table-responsive {
+            font-size: 0.9rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="text-un-blue mb-3">
+                <i class="fas fa-users-cog me-2"></i>用户管理
+            </h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard:home' %}">主页</a></li>
+                    <li class="breadcrumb-item active">用户管理</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <!-- 统计信息 -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h3>{{ users.count }}</h3>
+                <p class="mb-0">总用户数</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                <h3>{{ users|length }}</h3>
+                <p class="mb-0">当前显示</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);">
+                <h3>{{ task_areas_count }}</h3>
+                <p class="mb-0">任务区数量</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            {% if is_superuser %}
+            <div class="d-grid">
+                <a href="{% url 'dashboard:create_user' %}" class="btn btn-success btn-lg">
+                    <i class="fas fa-plus me-2"></i>添加新用户
+                </a>
+            </div>
+            {% else %}
+            <div class="stats-card" style="background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);">
+                <h3>{{ role_choices|length }}</h3>
+                <p class="mb-0">角色类型</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- 搜索和筛选 -->
+    <div class="search-section">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">搜索用户</label>
+                <input type="text" name="search" class="form-control" 
+                       placeholder="用户名、邮箱、姓名..." value="{{ search }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">角色筛选</label>
+                <select name="role" class="form-select">
+                    <option value="">全部角色</option>
+                    {% for role_value, role_display in role_choices %}
+                    <option value="{{ role_value }}" {% if role_filter == role_value %}selected{% endif %}>
+                        {{ role_display }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">任务区筛选</label>
+                <select name="task_area" class="form-select">
+                    <option value="">全部任务区</option>
+                    {% for area in task_areas %}
+                    <option value="{{ area.id }}">{{ area.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i>搜索
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <!-- 用户列表 -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card user-table">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-list me-2"></i>用户列表
+                        </h5>
+                        <div class="text-muted">
+                            <small>共 {{ users.count }} 位用户</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if users %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>用户</th>
+                                    <th>联系信息</th>
+                                    <th>角色</th>
+                                    <th>任务区</th>
+                                    <th>部门</th>
+                                    <th>职位</th>
+                                    <th>状态</th>
+                                    <th>注册时间</th>
+                                    {% if is_superuser %}
+                                    <th class="text-center">操作</th>
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="user-avatar me-3">
+                                                {{ user.username|first|upper }}
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">{{ user.username }}</div>
+                                                <small class="text-muted">
+                                                    {{ user.first_name }} {{ user.last_name }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <i class="fas fa-envelope text-muted me-1"></i>
+                                            {{ user.email|default:"未设置" }}
+                                        </div>
+                                        <div>
+                                            <i class="fas fa-phone text-muted me-1"></i>
+                                            {{ user.phone_number|default:"未设置" }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge role-badge 
+                                            {% if user.role == 'superuser' %}bg-primary
+                                            {% elif user.role == 'head_manager' %}bg-success
+                                            {% elif user.role == 'task_area_manager' %}bg-warning
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ user.get_role_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if user.role == 'head_manager' %}
+                                            <!-- 总部负责人显示管辖任务区 -->
+                                            {% for area in user.managed_task_areas.all %}
+                                                <span class="badge bg-success me-1">{{ area.name }}</span>
+                                            {% empty %}
+                                                <span class="text-muted">未分配</span>
+                                            {% endfor %}
+                                        {% elif user.task_area_fk %}
+                                            <!-- 其他角色显示单一任务区 -->
+                                            <span class="badge bg-info">{{ user.task_area_fk.name }}</span>
+                                        {% else %}
+                                            <span class="text-muted">未设置</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{ user.department_rank|default:"未设置" }}
+                                    </td>
+                                    <td>
+                                        {{ user.position|default:"未设置" }}
+                                    </td>
+                                    <td>
+                                        {% if user.is_active %}
+                                            <span class="badge status-badge bg-success">
+                                                <i class="fas fa-check me-1"></i>活跃
+                                            </span>
+                                        {% else %}
+                                            <span class="badge status-badge bg-danger">
+                                                <i class="fas fa-times me-1"></i>停用
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="small">
+                                            {{ user.date_joined|date:"Y-m-d" }}
+                                        </div>
+                                        <div class="text-muted small">
+                                            {{ user.date_joined|timesince }}前
+                                        </div>
+                                    </td>
+                                    {% if is_superuser %}
+                                    <td>
+                                        <div class="action-buttons">
+                                            <a href="{% url 'dashboard:edit_user' user.id %}" 
+                                               class="btn btn-sm btn-outline-primary" title="编辑">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% if user.id != request.user.id %}
+                                            <a href="{% url 'dashboard:delete_user' user.id %}" 
+                                               class="btn btn-sm btn-outline-danger" title="删除"
+                                               onclick="return confirm('确定要删除用户 {{ user.username }} 吗？')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">没有找到用户</h5>
+                        <p class="text-muted">尝试调整搜索条件或创建新用户</p>
+                        {% if is_superuser %}
+                        <a href="{% url 'dashboard:create_user' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>创建第一个用户
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 帮助信息 -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h6><i class="fas fa-info-circle me-2"></i>用户管理说明</h6>
+                <ul class="mb-0">
+                    <li><strong>搜索：</strong>可以通过用户名、邮箱、姓名等信息搜索用户</li>
+                    <li><strong>角色权限：</strong>不同角色具有不同的系统权限和访问范围</li>
+                    <li><strong>任务区分配：</strong>为用户分配所属任务区以便管理和权限控制</li>
+                    {% if is_superuser %}
+                    <li><strong>编辑用户：</strong>可以修改用户的基本信息、角色和状态</li>
+                    <li><strong>删除用户：</strong>谨慎操作，删除后不可恢复</li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 表格行悬停效果
+    const tableRows = document.querySelectorAll('tbody tr');
+    tableRows.forEach(row => {
+        row.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = '#f8f9fa';
+        });
+        
+        row.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = '';
+        });
+    });
+    
+    // 搜索框自动聚焦
+    const searchInput = document.querySelector('input[name="search"]');
+    if (searchInput && !searchInput.value) {
+        searchInput.focus();
+    }
+});
+</script>
+{% endblock %}

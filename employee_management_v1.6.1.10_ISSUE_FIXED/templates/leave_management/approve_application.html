@@ -1,0 +1,371 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}审批请假申请{% endblock %}
+
+{% block extra_css %}
+<style>
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 12px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    .status-pending { background-color: #ffc107; color: #212529; }
+    .status-approved { background-color: #28a745; color: white; }
+    .status-rejected { background-color: #dc3545; color: white; }
+    
+    .info-box {
+        background-color: #f8f9fa;
+        border-left: 4px solid #007bff;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .approval-option {
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 15px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .approval-option:hover {
+        border-color: #007bff;
+        background-color: #f8f9fa;
+    }
+    
+    .approval-option input[type="radio"]:checked + label {
+        color: #007bff;
+        font-weight: bold;
+    }
+    
+    .approval-option.approve {
+        border-color: #28a745;
+    }
+    
+    .approval-option.approve:hover {
+        background-color: #d4edda;
+    }
+    
+    .approval-option.reject {
+        border-color: #dc3545;
+    }
+    
+    .approval-option.reject:hover {
+        background-color: #f8d7da;
+    }
+    
+    .flight-info {
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>
+                    <i class="fas fa-clipboard-check"></i> 审批请假申请
+                </h2>
+                <a href="{% url 'leave_management:pending_approvals' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> 返回列表
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- 左侧：申请信息 -->
+        <div class="col-md-8">
+            <!-- 申请状态提示 -->
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <strong>当前状态：</strong>
+                <span class="status-badge status-{{ application.status }}">
+                    {{ application.get_status_display }}
+                </span>
+                <span class="ms-3">
+                    <strong>申请时间：</strong>{{ application.application_date|date:"Y年m月d日 H:i" }}
+                </span>
+            </div>
+
+            <!-- 申请人信息 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-user"></i> 申请人信息</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="info-box">
+                                <small class="text-muted">姓名</small>
+                                <h6 class="mb-0">{{ application.applicant.get_full_name }}</h6>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="info-box">
+                                <small class="text-muted">角色</small>
+                                <h6 class="mb-0">{{ application.applicant.get_role_display }}</h6>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="info-box">
+                                <small class="text-muted">所属任务区</small>
+                                <h6 class="mb-0">
+                                    {% if application.applicant.task_area_fk %}
+                                        {{ application.applicant.task_area_fk.name }}
+                                    {% else %}
+                                        <span class="text-muted">未设置</span>
+                                    {% endif %}
+                                </h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 请假详情 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-calendar-alt"></i> 请假详情</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <div class="info-box">
+                                <small class="text-muted">开始日期</small>
+                                <h6 class="mb-0">{{ application.leave_start_date|date:"Y年m月d日" }}</h6>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="info-box">
+                                <small class="text-muted">结束日期</small>
+                                <h6 class="mb-0">{{ application.leave_end_date|date:"Y年m月d日" }}</h6>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="info-box">
+                                <small class="text-muted">请假天数</small>
+                                <h6 class="mb-0">{{ application.duration_days }} 天</h6>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="info-box">
+                                <small class="text-muted">休假地点</small>
+                                <h6 class="mb-0">{{ application.leave_location }}</h6>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <label class="form-label"><strong>请假原因</strong></label>
+                            <div class="alert alert-light border">
+                                {{ application.leave_reason }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 行程信息 -->
+            {% if application.flight_segments.exists %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-plane"></i> 行程信息</h5>
+                </div>
+                <div class="card-body">
+                    <!-- 回国行程 -->
+                    {% with outbound_count=0 %}
+                    {% for flight in application.flight_segments.all %}
+                        {% if flight.segment_type == 'outbound' %}
+                            {% if outbound_count == 0 %}
+                            <h6 class="mb-3"><i class="fas fa-plane-departure text-primary"></i> 回国行程</h6>
+                            {% endif %}
+                            <div class="flight-info">
+                                <strong>第{{ flight.sequence }}程：</strong>
+                                {{ flight.departure }} → {{ flight.destination }}
+                                <br>
+                                <small class="text-muted">
+                                    航班号：{{ flight.flight_number }} | 
+                                    日期：{{ flight.flight_date|date:"Y-m-d" }}
+                                    {% if flight.flight_time %}| 时间：{{ flight.flight_time }}{% endif %}
+                                </small>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                    {% endwith %}
+                    
+                    {% if application.flight_segments.all|length > 0 %}
+                    <hr>
+                    {% endif %}
+
+                    <!-- 返回行程 -->
+                    {% with return_count=0 %}
+                    {% for flight in application.flight_segments.all %}
+                        {% if flight.segment_type == 'return' %}
+                            {% if return_count == 0 %}
+                            <h6 class="mb-3"><i class="fas fa-plane-arrival text-success"></i> 返回行程</h6>
+                            {% endif %}
+                            <div class="flight-info">
+                                <strong>第{{ flight.sequence }}程：</strong>
+                                {{ flight.departure }} → {{ flight.destination }}
+                                <br>
+                                <small class="text-muted">
+                                    航班号：{{ flight.flight_number }} | 
+                                    日期：{{ flight.flight_date|date:"Y-m-d" }}
+                                    {% if flight.flight_time %}| 时间：{{ flight.flight_time }}{% endif %}
+                                </small>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                    {% endwith %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- 右侧：审批表单 -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-edit"></i> 审批决定</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="approvalForm">
+                        {% csrf_token %}
+                        
+                        <!-- 审批选项 -->
+                        <div class="mb-4">
+                            <label class="form-label"><strong>审批结果 <span class="text-danger">*</span></strong></label>
+                            
+                            <!-- 批准选项 -->
+                            <div class="approval-option approve" onclick="selectOption('approve')">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="action" id="actionApprove" value="approve" required>
+                                    <label class="form-check-label" for="actionApprove">
+                                        <i class="fas fa-check-circle text-success"></i>
+                                        <strong>批准申请</strong>
+                                        <br>
+                                        <small class="text-muted">同意该员工的请假申请</small>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- 拒绝选项 -->
+                            <div class="approval-option reject" onclick="selectOption('reject')">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="action" id="actionReject" value="reject" required>
+                                    <label class="form-check-label" for="actionReject">
+                                        <i class="fas fa-times-circle text-danger"></i>
+                                        <strong>拒绝申请</strong>
+                                        <br>
+                                        <small class="text-muted">不同意该员工的请假申请</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 审批意见 -->
+                        <div class="mb-4">
+                            <label for="comment" class="form-label">
+                                <strong>审批意见</strong>
+                                <small class="text-muted">(选填)</small>
+                            </label>
+                            <textarea class="form-control" id="comment" name="comment" rows="4" 
+                                      placeholder="请输入审批意见或备注..."></textarea>
+                            <small class="form-text text-muted">
+                                建议在拒绝申请时说明原因
+                            </small>
+                        </div>
+
+                        <!-- 提交按钮 -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-paper-plane"></i> 提交审批
+                            </button>
+                            <a href="{% url 'leave_management:pending_approvals' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> 取消
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 温馨提示 -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">
+                        <i class="fas fa-lightbulb"></i> 温馨提示
+                    </h6>
+                    <ul class="small text-muted mb-0">
+                        <li>请仔细核对申请人的请假日期和行程信息</li>
+                        <li>批准后该申请将进入下一审批环节或直接通过</li>
+                        <li>拒绝后申请人将收到通知</li>
+                        <li>建议填写审批意见以便申请人了解决定原因</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 审批流程说明 -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">
+                        <i class="fas fa-route"></i> 审批流程
+                    </h6>
+                    <div class="small">
+                        {% if application.status == 'pending_task_area' %}
+                            <div class="alert alert-warning mb-0">
+                                <strong>当前环节：</strong>任务区负责人审批<br>
+                                <strong>下一环节：</strong>总部负责人审批
+                            </div>
+                        {% elif application.status == 'pending_head' %}
+                            <div class="alert alert-info mb-0">
+                                <strong>当前环节：</strong>总部负责人审批<br>
+                                <strong>下一环节：</strong>审批完成
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function selectOption(action) {
+    if (action === 'approve') {
+        document.getElementById('actionApprove').checked = true;
+    } else if (action === 'reject') {
+        document.getElementById('actionReject').checked = true;
+    }
+}
+
+// 表单提交确认
+document.getElementById('approvalForm').addEventListener('submit', function(e) {
+    const action = document.querySelector('input[name="action"]:checked');
+    if (!action) {
+        e.preventDefault();
+        alert('请选择审批结果');
+        return false;
+    }
+    
+    const actionValue = action.value;
+    const actionText = actionValue === 'approve' ? '批准' : '拒绝';
+    
+    if (!confirm(`确定要${actionText}这个请假申请吗？`)) {
+        e.preventDefault();
+        return false;
+    }
+});
+</script>
+{% endblock %}

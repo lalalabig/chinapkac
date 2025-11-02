@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}报告详情 - 员工管理系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="text-un-blue mb-0">
+                    <i class="fas fa-file-alt me-2"></i>报告详情
+                </h2>
+                <div>
+                    {% if can_download %}
+                        <a href="{% url 'reports:download_report' report.id %}" class="btn btn-success">
+                            <i class="fas fa-download me-2"></i>下载报告
+                        </a>
+                    {% endif %}
+                    <a href="javascript:history.back()" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>返回
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">基本信息</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <strong>上传者：</strong>
+                            {{ report.uploader.get_full_name|default:report.uploader.username }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>报告类型：</strong>
+                            {{ report.get_report_type_display }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>报告时期：</strong>
+                            {{ report.report_period }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>任务区：</strong>
+                            {{ report.task_area.name }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>上传时间：</strong>
+                            {{ report.upload_date|date:"Y年m月d日 H:i" }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>文件大小：</strong>
+                            {{ report.file_size|filesizeformat }}
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <strong>状态：</strong>
+                            {% if report.status == 'submitted' %}
+                                <span class="badge bg-secondary">待处理</span>
+                            {% elif report.status == 'reviewed' %}
+                                <span class="badge bg-warning">已查看</span>
+                            {% elif report.status == 'approved' %}
+                                <span class="badge bg-success">已审批</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">下载记录</h6>
+                </div>
+                <div class="card-body">
+                    {% if download_logs %}
+                        {% for log in download_logs %}
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="me-2">
+                                <i class="fas fa-user-circle text-un-blue"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">{{ log.downloader.get_full_name|default:log.downloader.username }}</div>
+                                <small class="text-muted">{{ log.download_time|date:"m-d H:i" }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">暂无下载记录</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

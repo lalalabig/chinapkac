@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}我的报告 - 员工管理系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="text-un-blue mb-0">
+                    <i class="fas fa-file-alt me-2"></i>我的报告
+                </h2>
+                <a href="{% url 'reports:upload' %}" class="btn btn-un-blue">
+                    <i class="fas fa-plus me-2"></i>上传新报告
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 统计卡片 -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stat-card">
+                <i class="fas fa-file-alt fa-2x mb-2"></i>
+                <div class="stat-number">{{ stats.total }}</div>
+                <div class="stat-label">总报告数</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                <i class="fas fa-check-circle fa-2x mb-2"></i>
+                <div class="stat-number">{{ stats.approved }}</div>
+                <div class="stat-label">已审批</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);">
+                <i class="fas fa-eye fa-2x mb-2"></i>
+                <div class="stat-number">{{ stats.viewed }}</div>
+                <div class="stat-label">已查看</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%);">
+                <i class="fas fa-clock fa-2x mb-2"></i>
+                <div class="stat-number">{{ stats.submitted }}</div>
+                <div class="stat-label">待处理</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 报告列表 -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">报告列表</h5>
+        </div>
+        <div class="card-body">
+            {% if reports %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>报告类型</th>
+                                <th>报告时期</th>
+                                <th>任务区</th>
+                                <th>上传时间</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for report in reports %}
+                            <tr>
+                                <td>{{ report.get_report_type_display }}</td>
+                                <td>{{ report.report_period }}</td>
+                                <td>{{ report.task_area.name }}</td>
+                                <td>{{ report.upload_date|date:"Y-m-d H:i" }}</td>
+                                <td>
+                                    {% if report.status == 'submitted' %}
+                                        <span class="badge bg-secondary">待处理</span>
+                                    {% elif report.status == 'reviewed' %}
+                                        <span class="badge bg-warning">已查看</span>
+                                    {% elif report.status == 'approved' %}
+                                        <span class="badge bg-success">已审批</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'reports:report_detail' report.id %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i> 查看
+                                    </a>
+                                    <a href="{% url 'reports:download_report' report.id %}" class="btn btn-sm btn-outline-success">
+                                        <i class="fas fa-download"></i> 下载
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 分页 -->
+                {% if reports.has_other_pages %}
+                <nav>
+                    <ul class="pagination justify-content-center">
+                        {% if reports.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ reports.previous_page_number }}">上一页</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for i in reports.paginator.page_range %}
+                            {% if reports.number == i %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ i }}</span>
+                                </li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if reports.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ reports.next_page_number }}">下一页</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">暂无报告</h5>
+                    <p class="text-muted">您还没有上传任何报告</p>
+                    <a href="{% url 'reports:upload' %}" class="btn btn-un-blue">
+                        <i class="fas fa-plus me-2"></i>上传第一份报告
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,382 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}更新位置 - 员工管理系统{% endblock %}
+
+{% block extra_css %}
+<style>
+    #map {
+        height: 400px;
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .location-info {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .current-location {
+        color: #28a745;
+        font-weight: bold;
+    }
+    
+    .location-controls {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+    }
+    
+    .btn-location {
+        flex: 1;
+        min-width: 200px;
+    }
+    
+    @media (max-width: 768px) {
+        .btn-location {
+            min-width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="text-un-blue mb-3">
+                <i class="fas fa-map-marker-alt me-2"></i>更新位置
+            </h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard:home' %}">主页</a></li>
+                    <li class="breadcrumb-item active">更新位置</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <!-- 当前位置信息 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="location-info">
+                <h5 class="mb-3">
+                    <i class="fas fa-info-circle me-2"></i>当前位置信息
+                </h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>经纬度：</strong>
+                            {% if current_latitude and current_longitude %}
+                                <span class="current-location">{{ current_latitude }}, {{ current_longitude }}</span>
+                            {% else %}
+                                <span class="text-muted">未设置</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>详细地址：</strong>
+                            {% if current_address %}
+                                <span class="current-location">{{ current_address }}</span>
+                            {% else %}
+                                <span class="text-muted">未设置</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>最后更新：</strong>
+                            {% if last_updated %}
+                                <span class="text-info">{{ last_updated|date:"Y-m-d H:i" }}</span>
+                            {% else %}
+                                <span class="text-muted">从未更新</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 位置操作 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-crosshairs me-2"></i>位置控制
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="location-controls">
+                        <button id="getCurrentLocation" class="btn btn-primary btn-location">
+                            <i class="fas fa-location-arrow me-2"></i>自动获取当前位置
+                        </button>
+                        <button id="clearLocation" class="btn btn-outline-warning btn-location">
+                            <i class="fas fa-eraser me-2"></i>清除选择
+                        </button>
+                        <button id="saveLocation" class="btn btn-success btn-location" disabled>
+                            <i class="fas fa-save me-2"></i>保存位置
+                        </button>
+                    </div>
+                    
+                    <!-- 地址输入框 -->
+                    <div class="mb-3">
+                        <label for="addressInput" class="form-label">详细地址</label>
+                        <input type="text" class="form-control" id="addressInput" 
+                               placeholder="请输入详细地址或标志性建筑"
+                               value="{{ current_address|default:'' }}">
+                        <small class="form-text text-muted">可以输入具体地址、建筑名称或其他位置描述</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 地图 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-map me-2"></i>地图选择
+                    </h5>
+                    <small class="text-muted">点击地图上的任意位置来设置您的位置</small>
+                </div>
+                <div class="card-body">
+                    <div id="map"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 说明信息 -->
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h6><i class="fas fa-lightbulb me-2"></i>使用说明</h6>
+                <ul class="mb-0">
+                    <li><strong>自动定位：</strong>点击"自动获取当前位置"按钮，系统会尝试获取您的GPS位置</li>
+                    <li><strong>手动选点：</strong>在地图上点击任意位置来设置您的位置</li>
+                    <li><strong>地址描述：</strong>在地址框中输入详细的位置描述</li>
+                    <li><strong>保存位置：</strong>确认位置正确后，点击"保存位置"完成更新</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap&libraries=geometry">
+</script>
+
+<script>
+let map;
+let marker;
+let selectedLat, selectedLng;
+
+function initMap() {
+    // 默认位置（北京）
+    const defaultLocation = { lat: 39.9042, lng: 116.4074 };
+    
+    // 如果有当前位置，使用当前位置
+    {% if current_latitude and current_longitude %}
+    const currentLocation = { 
+        lat: {{ current_latitude }}, 
+        lng: {{ current_longitude }} 
+    };
+    {% else %}
+    const currentLocation = defaultLocation;
+    {% endif %}
+    
+    // 初始化地图
+    map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 13,
+        center: currentLocation,
+        mapTypeId: 'roadmap'
+    });
+    
+    // 如果有当前位置，显示标记
+    {% if current_latitude and current_longitude %}
+    marker = new google.maps.Marker({
+        position: currentLocation,
+        map: map,
+        title: '当前位置',
+        icon: {
+            url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
+        }
+    });
+    selectedLat = {{ current_latitude }};
+    selectedLng = {{ current_longitude }};
+    document.getElementById('saveLocation').disabled = false;
+    {% endif %}
+    
+    // 地图点击事件
+    map.addListener('click', function(event) {
+        const clickedLocation = event.latLng;
+        
+        // 移除旧标记
+        if (marker) {
+            marker.setMap(null);
+        }
+        
+        // 添加新标记
+        marker = new google.maps.Marker({
+            position: clickedLocation,
+            map: map,
+            title: '选择的位置',
+            icon: {
+                url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+            }
+        });
+        
+        selectedLat = clickedLocation.lat();
+        selectedLng = clickedLocation.lng();
+        
+        // 启用保存按钮
+        document.getElementById('saveLocation').disabled = false;
+        
+        // 尝试获取地址信息
+        const geocoder = new google.maps.Geocoder();
+        geocoder.geocode({ location: clickedLocation }, function(results, status) {
+            if (status === 'OK' && results[0]) {
+                document.getElementById('addressInput').value = results[0].formatted_address;
+            }
+        });
+    });
+}
+
+// 获取当前位置
+document.getElementById('getCurrentLocation').addEventListener('click', function() {
+    const button = this;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>获取中...';
+    
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const location = { lat: lat, lng: lng };
+                
+                // 移动地图到当前位置
+                map.setCenter(location);
+                map.setZoom(15);
+                
+                // 移除旧标记
+                if (marker) {
+                    marker.setMap(null);
+                }
+                
+                // 添加新标记
+                marker = new google.maps.Marker({
+                    position: location,
+                    map: map,
+                    title: '我的位置',
+                    icon: {
+                        url: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png'
+                    }
+                });
+                
+                selectedLat = lat;
+                selectedLng = lng;
+                
+                // 启用保存按钮
+                document.getElementById('saveLocation').disabled = false;
+                
+                // 获取地址信息
+                const geocoder = new google.maps.Geocoder();
+                geocoder.geocode({ location: location }, function(results, status) {
+                    if (status === 'OK' && results[0]) {
+                        document.getElementById('addressInput').value = results[0].formatted_address;
+                    }
+                });
+                
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-location-arrow me-2"></i>自动获取当前位置';
+            },
+            function(error) {
+                alert('无法获取位置信息: ' + error.message);
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-location-arrow me-2"></i>自动获取当前位置';
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
+    } else {
+        alert('您的浏览器不支持地理定位功能');
+        button.disabled = false;
+        button.innerHTML = '<i class="fas fa-location-arrow me-2"></i>自动获取当前位置';
+    }
+});
+
+// 清除位置
+document.getElementById('clearLocation').addEventListener('click', function() {
+    if (marker) {
+        marker.setMap(null);
+        marker = null;
+    }
+    selectedLat = null;
+    selectedLng = null;
+    document.getElementById('addressInput').value = '';
+    document.getElementById('saveLocation').disabled = true;
+});
+
+// 保存位置
+document.getElementById('saveLocation').addEventListener('click', function() {
+    if (!selectedLat || !selectedLng) {
+        alert('请先选择一个位置');
+        return;
+    }
+    
+    const button = this;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>保存中...';
+    
+    const data = {
+        latitude: selectedLat,
+        longitude: selectedLng,
+        address: document.getElementById('addressInput').value
+    };
+    
+    fetch('{% url "location_tracking:update" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('位置更新成功！');
+            window.location.reload();
+        } else {
+            alert('更新失败: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('保存失败: ' + error.message);
+    })
+    .finally(() => {
+        button.disabled = false;
+        button.innerHTML = '<i class="fas fa-save me-2"></i>保存位置';
+    });
+});
+
+// 如果谷歌地图加载失败的处理
+window.gm_authFailure = function() {
+    document.getElementById('map').innerHTML = 
+        '<div class="alert alert-warning text-center p-5">' +
+        '<h5>地图服务暂时不可用</h5>' +
+        '<p>请检查网络连接或联系管理员</p>' +
+        '</div>';
+};
+</script>
+{% endblock %}

@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-user-edit me-2"></i>{{ title }}</h4>
+                </div>
+                <div class="card-body">
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <h6><i class="fas fa-exclamation-triangle me-2"></i>请修正以下错误：</h6>
+                            <ul class="mb-0">
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        <li>
+                                            <strong>
+                                                {% if field == 'username' %}用户名
+                                                {% elif field == 'email' %}邮箱
+                                                {% elif field == 'password' %}密码
+                                                {% elif field == 'confirm_password' %}确认密码
+                                                {% elif field == 'first_name' %}姓
+                                                {% elif field == 'last_name' %}名
+                                                {% elif field == 'role' %}角色
+                                                {% elif field == 'passport_number' %}护照号码
+                                                {% elif field == 'passport_name_pinyin' %}护照姓名拼音
+                                                {% elif field == 'task_area' %}任务区
+                                                {% else %}{{ field }}
+                                                {% endif %}:
+                                            </strong>
+                                            {{ error }}
+                                        </li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- 基本信息 -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2 mb-3">基本信息</h5>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.username.id_for_label }}" class="form-label">用户名 *</label>
+                                {{ form.username }}
+                                {% if form.username.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.username.errors %}
+                                            <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">用于登录的唯一标识</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.email.id_for_label }}" class="form-label">邮箱</label>
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.email.errors %}
+                                            <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.first_name.id_for_label }}" class="form-label">姓</label>
+                                {{ form.first_name }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.last_name.id_for_label }}" class="form-label">名</label>
+                                {{ form.last_name }}
+                            </div>
+                        </div>
+
+                        <!-- 密码信息 -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2 mb-3">密码设置</h5>
+                            </div>
+                            {% if form.password %}
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.password.id_for_label }}" class="form-label">密码 *</label>
+                                {{ form.password }}
+                                {% if form.password.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.password.errors %}
+                                            <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">至少6位，包含字母和数字</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.confirm_password.id_for_label }}" class="form-label">确认密码 *</label>
+                                {{ form.confirm_password }}
+                                {% if form.confirm_password.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.confirm_password.errors %}
+                                            <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            {% if form.new_password %}
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.new_password.id_for_label }}" class="form-label">新密码</label>
+                                {{ form.new_password }}
+                                <div class="form-text">留空则不修改密码</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.confirm_new_password.id_for_label }}" class="form-label">确认新密码</label>
+                                {{ form.confirm_new_password }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 角色和权限 -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2 mb-3">角色和权限</h5>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.role.id_for_label }}" class="form-label">角色 *</label>
+                                {{ form.role }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.task_area.id_for_label }}" class="form-label">任务区</label>
+                                {{ form.task_area }}
+                            </div>
+                            {% if form.is_active %}
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.is_active }}
+                                    <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                        账户激活状态
+                                    </label>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 工作信息 -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2 mb-3">工作信息</h5>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.position.id_for_label }}" class="form-label">职位</label>
+                                {{ form.position }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.department_rank.id_for_label }}" class="form-label">部门</label>
+                                {{ form.department_rank }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.task_area.id_for_label }}" class="form-label">任务区</label>
+                                {{ form.task_area }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.phone_number.id_for_label }}" class="form-label">手机号码</label>
+                                {{ form.phone_number }}
+                            </div>
+                        </div>
+
+                        <!-- 护照信息 -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2 mb-3">护照信息</h5>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label for="{{ form.passport_name_pinyin.id_for_label }}" class="form-label">护照姓名拼音</label>
+                                {{ form.passport_name_pinyin }}
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label for="{{ form.passport_number.id_for_label }}" class="form-label">护照号码</label>
+                                {{ form.passport_number }}
+                                {% if form.passport_number.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.passport_number.errors %}
+                                            <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">护照号码必须唯一</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.passport_issue_date.id_for_label }}" class="form-label">护照签发日期</label>
+                                {{ form.passport_issue_date }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.passport_expiry_date.id_for_label }}" class="form-label">护照到期日期</label>
+                                {{ form.passport_expiry_date }}
+                            </div>
+                        </div>
+
+                        <!-- 在职时间 -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2 mb-3">在职时间</h5>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.employment_start_date.id_for_label }}" class="form-label">在职开始时间</label>
+                                {{ form.employment_start_date }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.employment_end_date.id_for_label }}" class="form-label">在职结束时间 <small class="text-muted">(如仍在职可留空)</small></label>
+                                {{ form.employment_end_date }}
+                            </div>
+                        </div>
+
+                        <!-- 按钮 -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'usermanagement:user_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>返回列表
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>{{ submit_text }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

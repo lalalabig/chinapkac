@@ -1,0 +1,280 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}待审批列表{% endblock %}
+
+{% block extra_css %}
+<style>
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    .status-pending-task-area { background-color: #ffc107; color: #212529; }
+    .status-pending-head { background-color: #17a2b8; color: white; }
+    .status-approved { background-color: #28a745; color: white; }
+    .status-rejected { background-color: #dc3545; color: white; }
+    .priority-urgent { color: #dc3545; font-weight: bold; }
+    .priority-normal { color: #6c757d; }
+    .approval-step {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    .step-circle {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background-color: #007bff;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-right: 15px;
+    }
+    .step-circle.completed {
+        background-color: #28a745;
+    }
+    .step-circle.rejected {
+        background-color: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2>待审批列表</h2>
+        </div>
+    </div>
+    
+    {% if user.role == 'task_area_manager' %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            您是任务区负责人，只看到本任务区员工的待审批申请
+        </div>
+    {% elif user.role == 'head_manager' %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            您是总部负责人，看到管辖任务区的待审批申请
+        </div>
+    {% elif user.role == 'superuser' %}
+        <div class="alert alert-warning">
+            <i class="fas fa-crown"></i>
+            超级管理员权限，可以看到所有待审批申请
+        </div>
+    {% endif %}
+    
+    {% if applications %}
+        <!-- 统计卡片 -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-white bg-warning">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4 class="card-title">{{ applications|length }}</h4>
+                                <p class="card-text">待审批申请</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-clock fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-white bg-primary">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4 class="card-title">{{ today_approvals|default:0 }}</h4>
+                                <p class="card-text">今日待批</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-calendar-day fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-white bg-info">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4 class="card-title">{{ avg_processing_time|default:0 }}h</h4>
+                                <p class="card-text">平均处理时间</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-stopwatch fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 申请列表 -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">待审批申请</h5>
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="refreshList()">
+                        <i class="fas fa-sync-alt"></i> 刷新
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>申请人</th>
+                                <th>任务区</th>
+                                <th>休假期间</th>
+                                <th>休假天数</th>
+                                <th>休假地点</th>
+                                <th>申请时间</th>
+                                <th>紧急程度</th>
+                                <th>审批步骤</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for application in applications %}
+                            <tr>
+                                <td>
+                                    <strong>{{ application.applicant.get_full_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ application.applicant.username }}</small>
+                                </td>
+                                <td>{{ application.applicant.task_area.name }}</td>
+                                <td>
+                                    {{ application.leave_start_date|date:"m-d" }} 至 {{ application.leave_end_date|date:"m-d" }}
+                                    <br>
+                                    <small class="text-muted">{{ application.leave_start_date|date:"Y" }}年</small>
+                                </td>
+                                <td>
+                                    <span class="badge badge-info">{{ application.duration_days }}天</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-map-marker-alt text-danger mr-1"></i>
+                                        <span>{{ application.leave_location }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    {{ application.application_date|timesince }}前
+                                    <br>
+                                    <small class="text-muted">{{ application.application_date|date:"Y-m-d H:i" }}</small>
+                                </td>
+                                <td>
+                                    {% if application.leave_start_date <= today and application.leave_start_date >= yesterday %}
+                                        <span class="priority-urgent">紧急</span>
+                                    {% else %}
+                                        <span class="priority-normal">正常</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="approval-step">
+                                        <div class="step-circle 
+                                            {% if application.status == 'pending_head' or application.status == 'approved' %}completed{% endif %}">
+                                            1
+                                        </div>
+                                        <div>
+                                            <small>任务区负责人</small>
+                                        </div>
+                                    </div>
+                                    <div class="approval-step">
+                                        <div class="step-circle 
+                                            {% if application.status == 'approved' %}completed
+                                            {% elif application.status == 'rejected' %}rejected{% endif %}">
+                                            2
+                                        </div>
+                                        <div>
+                                            <small>总部负责人</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'leave_management:approve_application' application.id %}" class="btn btn-sm btn-success">
+                                            <i class="fas fa-check"></i> 审批
+                                        </a>
+                                        <a href="{% url 'leave_management:application_detail' application.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i> 查看
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- 分页 -->
+                {% if applications.has_other_pages %}
+                <nav aria-label="审批分页">
+                    <ul class="pagination justify-content-center">
+                        {% if applications.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ applications.previous_page_number }}">上一页</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for page_num in applications.paginator.page_range %}
+                            {% if page_num == applications.number %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if applications.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ applications.next_page_number }}">下一页</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    {% else %}
+        <div class="row">
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="fas fa-check-circle fa-5x text-success mb-3"></i>
+                    <h4 class="text-success">没有待审批的申请</h4>
+                    <p class="text-muted">当前没有需要您审批的请假申请</p>
+                    <a href="{% url 'leave_management:dashboard' %}" class="btn btn-primary">
+                        <i class="fas fa-tachometer-alt"></i> 返回仪表板
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function refreshList() {
+    location.reload();
+}
+
+// 自动刷新页面（每5分钟）
+setInterval(function() {
+    // 只在页面可见时刷新
+    if (!document.hidden) {
+        refreshList();
+    }
+}, 300000); // 5分钟 = 300000毫秒
+</script>
+{% endblock %}

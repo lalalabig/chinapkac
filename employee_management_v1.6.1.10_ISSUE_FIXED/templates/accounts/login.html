@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}登录 - 员工管理系统{% endblock %}
+
+{% block content %}
+<div class="auth-card fade-in-up">
+    <!-- 头部 -->
+    <div class="auth-header">
+        <i class="fas fa-globe fa-2x mb-3"></i>
+        <h1>员工管理系统</h1>
+        <div class="subtitle">欢迎登录您的账户</div>
+    </div>
+    
+    <!-- 主体内容 -->
+    <div class="auth-body">
+        <form method="post" class="auth-form">
+            {% csrf_token %}
+            
+            <!-- 用户名 -->
+            <div class="form-group">
+                <label for="{{ form.username.id_for_label }}" class="form-label">
+                    <i class="fas fa-user me-2"></i>用户名
+                </label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                    <div class="text-danger small mt-1">
+                        {{ form.username.errors.0 }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- 密码 -->
+            <div class="form-group">
+                <label for="{{ form.password.id_for_label }}" class="form-label">
+                    <i class="fas fa-lock me-2"></i>密码
+                </label>
+                {{ form.password }}
+                {% if form.password.errors %}
+                    <div class="text-danger small mt-1">
+                        {{ form.password.errors.0 }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- 记住我 -->
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="rememberMe" name="remember_me">
+                <label class="form-check-label" for="rememberMe">
+                    记住我
+                </label>
+            </div>
+            
+            <!-- 登录按钮 -->
+            <button type="submit" class="btn btn-un-blue w-100">
+                <i class="fas fa-sign-in-alt me-2"></i>登录
+            </button>
+            
+            <!-- 非字段错误 -->
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger mt-3" role="alert">
+                    {{ form.non_field_errors.0 }}
+                </div>
+            {% endif %}
+        </form>
+        
+        <!-- 其他链接 -->
+        <div class="auth-links">
+            <p class="mb-2">
+                <small class="text-muted">还没有账户？</small>
+                <a href="{% url 'accounts:register' %}">立即注册</a>
+            </p>
+            <p class="mb-0">
+                <small>
+                    <a href="#" class="text-muted">忘记密码？</a>
+                </small>
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- 版权信息 -->
+<div class="text-center mt-4">
+    <small class="text-white-50">
+        &copy; 2025 员工管理系统. 版权所有.
+    </small>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 表单提交动画
+document.querySelector('.auth-form').addEventListener('submit', function(e) {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.innerHTML = '<span class="loading me-2"></span>登录中...';
+    submitBtn.disabled = true;
+    
+    // 如果有错误，恢复按钮状态
+    setTimeout(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }, 3000);
+});
+
+// 安全的自动聚焦用户名输入框（兼容企业环境）
+document.addEventListener('DOMContentLoaded', function() {
+    // 使用更安全的方式聚焦
+    function safeFocus() {
+        const usernameInput = document.querySelector('input[name="username"]');
+        if (usernameInput) {
+            try {
+                // 检查是否已经有聚焦的元素
+                const activeElement = document.activeElement;
+                if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+                    console.log('已有元素聚焦，跳过自动聚焦');
+                    return;
+                }
+                
+                // 使用setTimeout延迟聚焦，等待页面完全稳定
+                setTimeout(() => {
+                    if (document.querySelector('input[name="username"]')) {
+                        const input = document.querySelector('input[name="username"]');
+                        input.focus();
+                        console.log('成功聚焦到用户名输入框');
+                    }
+                }, 100);
+                
+            } catch (error) {
+                console.log('自动聚焦被浏览器阻止（正常现象）:', error.message);
+                // 不抛出错误，避免影响用户体验
+            }
+        }
+    }
+    
+    // 尝试聚焦
+    safeFocus();
+    
+    // 添加备选方案：延迟再次尝试
+    setTimeout(safeFocus, 500);
+    
+    // 添加备选方案：用户点击页面时聚焦
+    document.addEventListener('click', function(e) {
+        if (e.target === document.body || e.target.closest('.auth-body')) {
+            const usernameInput = document.querySelector('input[name="username"]');
+            if (usernameInput && document.activeElement !== usernameInput) {
+                setTimeout(() => {
+                    if (document.querySelector('input[name="username"]')) {
+                        document.querySelector('input[name="username"]').focus();
+                    }
+                }, 100);
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

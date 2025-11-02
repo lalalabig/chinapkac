@@ -1,0 +1,487 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}员工列表 - 员工管理系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="text-un-blue mb-3">
+                <i class="fas fa-list-ul me-2"></i>员工列表
+            </h2>
+            <p class="text-muted">查看和管理您的下属员工信息</p>
+        </div>
+    </div>
+    
+    <!-- 搜索和筛选功能 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-filter me-2"></i>搜索和筛选
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">
+                                <i class="fas fa-search me-1"></i>搜索员工
+                            </label>
+                            <input type="text" name="search" class="form-control" 
+                                   placeholder="用户名、姓名、邮箱、部门、职位...” 
+                                   value="{{ search }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">
+                                <i class="fas fa-map-marker-alt me-1"></i>任务区筛选
+                            </label>
+                            <select name="task_area" class="form-select">
+                                <option value="">全部任务区</option>
+                                {% for area in available_task_areas %}
+                                <option value="{{ area.id }}" {% if task_area_filter == area.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ area.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">
+                                <i class="fas fa-user-tag me-1"></i>角色筛选
+                            </label>
+                            <select name="role" class="form-select">
+                                <option value="">全部角色</option>
+                                {% for role_value, role_name in available_roles %}
+                                <option value="{{ role_value }}" {% if role_filter == role_value|stringformat:"s" %}selected{% endif %}>
+                                    {{ role_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search me-1"></i>搜索
+                                </button>
+                                <a href="{% url 'dashboard:team_management' %}" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-redo me-1"></i>重置
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-list me-2"></i>员工信息
+                        </h5>
+                        <div class="text-muted">
+                            <small>共 {{ team_members|length }} 位员工</small>
+                            {% if search or task_area_filter or role_filter %}
+                            <span class="badge bg-info ms-2">已筛选</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if team_members %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th><i class="fas fa-user me-1"></i>用户名</th>
+                                    <th><i class="fas fa-envelope me-1"></i>邮箱</th>
+                                    <th><i class="fas fa-id-badge me-1"></i>姓名</th>
+                                    <th><i class="fas fa-shield-alt me-1"></i>角色</th>
+                                    <th><i class="fas fa-map-marker-alt me-1"></i>任务区</th>
+                                    <th><i class="fas fa-building me-1"></i>部门</th>
+                                    <th><i class="fas fa-briefcase me-1"></i>职位</th>
+                                    <th><i class="fas fa-calendar me-1"></i>入职时间</th>
+                                    <th><i class="fas fa-clock me-1"></i>最后登录</th>
+                                    <th class="text-center"><i class="fas fa-toggle-on me-1"></i>状态</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for member in team_members %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-user-circle fa-lg text-un-blue me-2"></i>
+                                            <strong>{{ member.username }}</strong>
+                                        </div>
+                                    </td>
+                                    <td>{{ member.email|default:"未设置" }}</td>
+                                    <td>{{ member.first_name }} {{ member.last_name }}</td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ member.get_role_display }}</span>
+                                    </td>
+                                    <td>
+                                        {% if member.role == 'superuser' %}
+                                            <small class="text-muted">-</small>
+                                        {% elif member.role == 'head_manager' %}
+                                            {% for area in member.managed_task_areas.all %}
+                                                <span class="badge bg-primary">{{ area.name }}</span>
+                                            {% empty %}
+                                                <small class="text-muted">未分配</small>
+                                            {% endfor %}
+                                        {% else %}
+                                            {% if member.task_area_fk %}
+                                                <span class="badge bg-info">{{ member.task_area_fk.name }}</span>
+                                            {% else %}
+                                                <small class="text-muted">未设置</small>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ member.department_rank|default:"未设置" }}</td>
+                                    <td>{{ member.position|default:"未设置" }}</td>
+                                    <td>
+                                        {% if member.employment_start_date %}
+                                            {{ member.employment_start_date|date:"Y-m-d" }}
+                                        {% else %}
+                                            <small class="text-muted">未设置</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if member.last_login %}
+                                            <small class="text-muted">{{ member.last_login|timesince }}前</small>
+                                        {% else %}
+                                            <small class="text-muted">从未登录</small>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if member.is_active %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>活跃
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times me-1"></i>停用
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    共 {{ team_members|length }} 名员工
+                                    {% if search or task_area_filter or role_filter %}
+                                    <span class="badge bg-warning text-dark ms-2">当前为筛选结果</span>
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <small class="text-muted">
+                                    <i class="fas fa-sort-amount-down me-1"></i>
+                                    {% if user.role == 4 %}
+                                    排序：总部负责人 → 任务区（拼音） → 角色 → 姓氏（拼音）
+                                    {% elif user.role == 3 %}
+                                    排序：任务区（拼音） → 角色 → 姓氏（拼音）
+                                    {% else %}
+                                    排序：姓氏（拼音）
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">暂无下属员工</h5>
+                        <p class="text-muted">当前没有您可以查看的员工信息</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if team_members %}
+    <!-- 员工位置地图 -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title">
+                            <i class="fas fa-map-marked-alt me-2"></i>员工位置分布
+                        </h5>
+                        <div>
+                            <button id="viewFullMap" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-expand me-1"></i>查看详细地图
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="teamMap" style="height: 350px; border-radius: 0 0 8px 8px;"></div>
+                </div>
+                <div class="card-footer">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <small class="text-muted">总员工数</small>
+                            <div class="fw-bold">{{ team_members.count }}</div>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted">已更新位置</small>
+                            <div class="fw-bold text-success" id="locatedCount">-</div>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted">未更新位置</small>
+                            <div class="fw-bold text-warning" id="notLocatedCount">-</div>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted">最近更新</small>
+                            <div class="fw-bold text-info" id="lastUpdateTime">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+
+<!-- Leaflet JavaScript -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+     crossorigin=""></script>
+
+<script>
+let teamMap;
+let teamMarkers = [];
+
+// 从Django模板获取团队成员数据
+const teamMembersData = [
+    {% for member in team_members %}
+    {
+        username: '{{ member.username }}',
+        first_name: '{{ member.first_name }}',
+        last_name: '{{ member.last_name }}',
+        name: '{{ member.first_name }} {{ member.last_name }}',
+        role: '{{ member.role }}',
+        role_display: '{{ member.get_role_display }}',
+        latitude: {% if member.latitude %}{{ member.latitude }}{% else %}null{% endif %},
+        longitude: {% if member.longitude %}{{ member.longitude }}{% else %}null{% endif %},
+        address: '{{ member.location_address|default:"未设置地址" }}',
+        updated_at: '{% if member.location_updated_at %}{{ member.location_updated_at|date:"Y-m-d H:i" }}{% else %}未更新{% endif %}'
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+
+function initTeamMap() {
+    console.log('初始化团队地图...');
+    
+    // 过滤有位置数据的成员
+    const locatedMembers = teamMembersData.filter(member => 
+        member.latitude !== null && member.longitude !== null
+    );
+    
+    if (locatedMembers.length === 0) {
+        document.getElementById('teamMap').innerHTML = 
+            '<div class="d-flex align-items-center justify-content-center h-100 text-muted" style="height: 350px;">' +
+            '<div class="text-center">' +
+            '<i class="fas fa-map-marker-alt fa-3x mb-3"></i>' +
+            '<h5>暂无位置数据</h5>' +
+            '<p>团队成员尚未更新位置信息</p>' +
+            '</div>' +
+            '</div>';
+        
+        updateTeamLocationStats(0, teamMembersData.length);
+        return;
+    }
+    
+    // 计算地图中心点
+    const latitudes = locatedMembers.map(m => parseFloat(m.latitude));
+    const longitudes = locatedMembers.map(m => parseFloat(m.longitude));
+    
+    const centerLat = latitudes.reduce((a, b) => a + b, 0) / latitudes.length;
+    const centerLng = longitudes.reduce((a, b) => a + b, 0) / longitudes.length;
+    
+    // 初始化真实地图
+    teamMap = L.map('teamMap').setView([centerLat, centerLng], 10);
+    
+    // 添加道路图图层（默认）
+    const roadLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 18
+    }).addTo(teamMap);
+    
+    // 添加卫星图图层
+    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles © Esri',
+        maxZoom: 18
+    });
+    
+    // 地图图层控制
+    const baseMaps = {
+        "道路图": roadLayer,
+        "卫星图": satelliteLayer
+    };
+    
+    L.control.layers(baseMaps).addTo(teamMap);
+    
+    // 角色颜色配置
+    const roleColors = {
+        'superuser': '#f44336',
+        'head_manager': '#ff9800', 
+        'task_area_manager': '#4caf50',
+        'employee': '#2196f3'
+    };
+    
+    // 添加员工标记
+    locatedMembers.forEach(member => {
+        const lat = parseFloat(member.latitude);
+        const lng = parseFloat(member.longitude);
+        
+        // 创建自定义图标
+        const customIcon = L.divIcon({
+            className: 'custom-div-icon',
+            html: `<div style="
+                background-color: ${roleColors[member.role] || '#2196f3'};
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                border: 3px solid white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: bold;
+                font-size: 12px;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            ">${(member.first_name || member.username).charAt(0).toUpperCase()}</div>`,
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+        });
+        
+        const marker = L.marker([lat, lng], { icon: customIcon }).addTo(teamMap);
+        
+        // 添加弹窗信息
+        const popupContent = `
+            <div style="min-width: 200px;">
+                <h6 style="margin: 0 0 8px 0; color: ${roleColors[member.role]};">
+                    <i class="fas fa-user"></i> ${member.name}
+                </h6>
+                <p style="margin: 3px 0;"><strong>用户名：</strong>${member.username}</p>
+                <p style="margin: 3px 0;"><strong>角色：</strong>${member.role_display}</p>
+                <p style="margin: 3px 0;"><strong>坐标：</strong>${lat.toFixed(4)}, ${lng.toFixed(4)}</p>
+                <p style="margin: 3px 0;"><strong>地址：</strong>${member.address}</p>
+                <p style="margin: 3px 0;"><strong>更新时间：</strong>${member.updated_at}</p>
+            </div>
+        `;
+        
+        marker.bindPopup(popupContent);
+        teamMarkers.push(marker);
+    });
+    
+    // 调整地图视图包含所有标记
+    if (locatedMembers.length > 0) {
+        const group = new L.featureGroup(teamMarkers);
+        teamMap.fitBounds(group.getBounds().pad(0.1));
+    }
+    
+    // 更新统计信息
+    updateTeamLocationStats(locatedMembers.length, teamMembersData.length - locatedMembers.length);
+}
+
+// 更新位置统计信息
+function updateTeamLocationStats(locatedCount, notLocatedCount) {
+    document.getElementById('locatedCount').textContent = locatedCount;
+    document.getElementById('notLocatedCount').textContent = notLocatedCount;
+    
+    // 计算最近更新时间
+    const recentUpdates = teamMembersData
+        .filter(member => member.updated_at !== '未更新')
+        .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+    
+    if (recentUpdates.length > 0) {
+        document.getElementById('lastUpdateTime').textContent = recentUpdates[0].updated_at;
+    } else {
+        document.getElementById('lastUpdateTime').textContent = '无';
+    }
+}
+
+// 页面加载完成后初始化地图
+document.addEventListener('DOMContentLoaded', function() {
+    // 延迟初始化以确保DOM完全加载
+    setTimeout(initTeamMap, 100);
+    
+    // 表格行点击高亮
+    const tableRows = document.querySelectorAll('tbody tr');
+    tableRows.forEach(row => {
+        row.addEventListener('click', function() {
+            // 移除其他行的高亮
+            tableRows.forEach(r => r.classList.remove('table-active'));
+            // 添加当前行高亮
+            this.classList.add('table-active');
+            
+            // 如果该用户有位置信息，在地图上高亮显示
+            const username = this.cells[0].querySelector('strong').textContent.trim();
+            highlightUserOnTeamMap(username);
+        });
+    });
+    
+    // 查看详细地图按钮
+    const viewFullMapBtn = document.getElementById('viewFullMap');
+    if (viewFullMapBtn) {
+        viewFullMapBtn.addEventListener('click', function() {
+            window.open('{% url "location_tracking:map_view" %}', '_blank');
+        });
+    }
+});
+
+function highlightUserOnTeamMap(username) {
+    if (teamMarkers.length === 0) return;
+    
+    // 找到对应的标记
+    const memberData = teamMembersData.find(member => member.username === username);
+    if (!memberData || !memberData.latitude || !memberData.longitude) return;
+    
+    // 关闭当前弹窗
+    hideTeamPopup();
+    
+    // 找到对应的标记并触发点击
+    const targetMarker = teamMarkers.find(m => m.data.username === username);
+    if (targetMarker) {
+        // 高亮标记
+        teamMarkers.forEach(m => m.element.style.transform = 'translate(-50%, -50%) scale(1)');
+        targetMarker.element.style.transform = 'translate(-50%, -50%) scale(1.3)';
+        
+        // 稍作延迟后显示信息弹窗
+        setTimeout(() => {
+            showTeamPopup(targetMarker.data, targetMarker.element);
+        }, 300);
+    }
+}
+
+// 点击地图空白区域隐藏弹窗
+document.getElementById('teamMapContainer').addEventListener('click', function(e) {
+    if (e.target === this || e.target.classList.contains('map-background') || e.target.classList.contains('map-grid')) {
+        hideTeamPopup();
+    }
+});
+</script>
+{% endblock %}

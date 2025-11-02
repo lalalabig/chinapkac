@@ -1,0 +1,187 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}员工管理系统{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- 自定义样式 -->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- 导航栏 -->
+    {% if user.is_authenticated %}
+    <nav class="navbar navbar-expand-lg navbar-dark bg-un-blue">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'dashboard:home' %}">
+                <img src="{% static 'images/un_emblem_blue.png' %}" alt="UN" style="height: 40px; width: 40px;" class="me-2">
+                员工管理系统
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'dashboard:home' %}">
+                            <i class="fas fa-home me-1"></i>主页
+                        </a>
+                    </li>
+                    
+                    <!-- 个人资料 - 所有用户都可以访问 -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'dashboard:profile' %}">
+                            <i class="fas fa-user me-1"></i>个人资料
+                        </a>
+                    </li>
+                    
+                    <!-- 请假功能 - 需要请假的用户可以访问 -->
+                    {% if user_permissions.can_apply_leave %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'leave_management:apply_leave' %}">
+                            <i class="fas fa-calendar-plus me-1"></i>请假申请
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- 审批管理 - 管理员级别用户可以访问 -->
+                    {% if user_permissions.can_approve_leave %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'leave_management:pending_approvals' %}">
+                            <i class="fas fa-check-circle me-1"></i>审批管理
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- 员工列表 - 分公司负责人及以上可以访问 -->
+                    {% if user_permissions.can_view_reports %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'dashboard:team_management' %}">
+                            <i class="fas fa-list-ul me-1"></i>员工列表
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- 工作报告 - 所有用户都可以访问 -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'reports:my_reports' %}">
+                            <i class="fas fa-file-alt me-1"></i>工作报告
+                        </a>
+                    </li>
+                    
+                    <!-- 位置更新 - 员工和分公司负责人可以访问 -->
+                    {% if user_permissions.can_update_location %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'location:update_location' %}">
+                            <i class="fas fa-map-marker-alt me-1"></i>更新位置
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- 管理菜单 - 下拉菜单，仅管理员可见 -->
+                    {% if user_permissions.can_manage_employees %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-cog me-1"></i>系统管理
+                        </a>
+                        <ul class="dropdown-menu">
+                            {% if user_permissions.can_manage_employees %}
+                            <li><a class="dropdown-item" href="{% url 'dashboard:user_management' %}">
+                                <i class="fas fa-users me-2"></i>用户管理
+                            </a></li>
+                            {% endif %}
+                            {% if user_permissions.can_manage_system %}
+                            <li><a class="dropdown-item" href="{% url 'dashboard:system_settings' %}">
+                                <i class="fas fa-wrench me-2"></i>系统设置
+                            </a></li>
+                            {% endif %}
+                        </ul>
+                    </li>
+                    {% endif %}
+                </ul>
+                
+                <ul class="navbar-nav">
+                    <!-- 用户信息和退出 -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i>{{ user.username }}
+                            <small class="badge bg-secondary ms-1">{{ user.get_role_display }}</small>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><h6 class="dropdown-header">用户信息</h6></li>
+                            <li><span class="dropdown-item-text">
+                                <small class="text-muted">角色：{{ user.get_role_display }}</small>
+                            </span></li>
+                            {% if user.department_rank %}
+                            <li><span class="dropdown-item-text">
+                                <small class="text-muted">部门：{{ user.department_rank }}</small>
+                            </span></li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'dashboard:profile' %}">
+                                <i class="fas fa-user-edit me-2"></i>个人资料
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'accounts:logout' %}">
+                                <i class="fas fa-sign-out-alt me-2"></i>登出
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+    
+    <!-- 主内容区域 -->
+    <main class="{% if user.is_authenticated %}container-fluid mt-4{% else %}auth-container{% endif %}">
+        <!-- 消息提示 -->
+        {% if messages %}
+        <div class="row">
+            <div class="col-12">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        {% block content %}
+        {% endblock %}
+    </main>
+    
+    <!-- 底部 -->
+    {% if user.is_authenticated %}
+    <footer class="bg-light mt-5 py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="text-muted mb-0">&copy; 2025 员工管理系统. 版权所有.</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <small class="text-muted">当前用户：{{ user.username }} ({{ user.get_role_display }})</small>
+                </div>
+            </div>
+        </div>
+    </footer>
+    {% endif %}
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

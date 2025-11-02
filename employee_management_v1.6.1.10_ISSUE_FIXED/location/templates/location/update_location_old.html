@@ -1,0 +1,512 @@
+{% extends 'base.html' %}
+
+{% block title %}更新位置{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-map-marker-alt me-2"></i>更新位置</h4>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <!-- 当前位置信息 -->
+                    {% if user.latitude and user.longitude %}
+                    <div class="alert alert-info">
+                        <h6>当前位置信息：</h6>
+                        <p><strong>坐标：</strong>{{ user.latitude|floatformat:6 }}, {{ user.longitude|floatformat:6 }}</p>
+                        {% if user.location_address %}
+                        <p><strong>地址：</strong>{{ user.location_address }}</p>
+                        {% endif %}
+                        {% if user.location_updated_at %}
+                        <p><strong>更新时间：</strong>{{ user.location_updated_at|date:"Y-m-d H:i:s" }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- 简化地图容器 -->
+                    <div id="mapContainer" class="mb-4">
+                        <div class="map-canvas" id="mapCanvas">
+                            <div class="map-background"></div>
+                            <div class="map-grid"></div>
+                            <div class="map-info">
+                                <h5><i class="fas fa-map-marked-alt"></i> 位置选择器</h5>
+                                <p class="mb-2">点击地图选择位置，或使用GPS自动定位</p>
+                                <div class="map-coordinates" id="mapCoordinates">
+                                    {% if user.latitude and user.longitude %}
+                                        当前位置: {{ user.latitude|floatformat:4 }}, {{ user.longitude|floatformat:4 }}
+                                    {% else %}
+                                        点击地图或使用GPS定位
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="map-marker" id="mapMarker" style="display: none;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 位置控制面板 -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <button id="getCurrentLocation" class="btn btn-primary btn-lg w-100 mb-3">
+                                <i class="fas fa-crosshairs me-2"></i>GPS自动定位
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <button id="clearLocation" class="btn btn-warning btn-lg w-100 mb-3">
+                                <i class="fas fa-trash me-2"></i>清除位置
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 位置表单 -->
+                    <form method="post" id="locationForm">
+                        {% csrf_token %}
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="latitude" class="form-label">纬度</label>
+                                <input type="number" step="0.000001" class="form-control" id="latitude" name="latitude" 
+                                       placeholder="例如: 39.904200" value="{% if user.latitude %}{{ user.latitude|floatformat:6 }}{% endif %}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="longitude" class="form-label">经度</label>
+                                <input type="number" step="0.000001" class="form-control" id="longitude" name="longitude" 
+                                       placeholder="例如: 116.407400" value="{% if user.longitude %}{{ user.longitude|floatformat:6 }}{% endif %}">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="address" class="form-label">详细地址</label>
+                            <input type="text" class="form-control" id="address" name="address" 
+                                   placeholder="请输入或修改具体地址..." value="{{ user.location_address|default:'' }}">
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success btn-lg" id="saveLocationBtn">
+                                <i class="fas fa-save me-2"></i>保存位置
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- 使用说明 -->
+                    <div class="mt-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title">使用说明：</h6>
+                                <ul class="mb-0">
+                                    <li>点击"GPS自动定位"获取当前精确位置（推荐）</li>
+                                    <li>在地图上点击任意位置进行手动选择</li>
+                                    <li>可以直接在经纬度输入框中输入坐标</li>
+                                    <li>地址信息会自动获取，也可手动编辑</li>
+                                    <li>确认位置信息后点击"保存位置"</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.map-canvas {
+    width: 100%;
+    height: 400px;
+    position: relative;
+    border: 2px solid #007bff;
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: crosshair;
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+}
+
+.map-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        radial-gradient(circle at 20% 20%, rgba(33, 150, 243, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(33, 150, 243, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 40% 70%, rgba(33, 150, 243, 0.05) 0%, transparent 50%);
+}
+
+.map-grid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        linear-gradient(rgba(33, 150, 243, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(33, 150, 243, 0.1) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.5;
+}
+
+.map-info {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.95);
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    z-index: 5;
+    max-width: 90%;
+    pointer-events: none;
+}
+
+.map-coordinates {
+    font-size: 0.9em;
+    color: #666;
+    margin-top: 10px;
+    font-family: monospace;
+    background: #f8f9fa;
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+.map-marker {
+    position: absolute;
+    width: 24px;
+    height: 36px;
+    background: #dc3545;
+    border: 3px solid white;
+    border-radius: 50% 50% 50% 0;
+    transform: translate(-50%, -100%) rotate(-45deg);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+    z-index: 10;
+    animation: markerBounce 1s ease-out;
+}
+
+.map-marker::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: white;
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+@keyframes markerBounce {
+    0% { transform: translate(-50%, -100%) rotate(-45deg) scale(0); }
+    50% { transform: translate(-50%, -100%) rotate(-45deg) scale(1.2); }
+    100% { transform: translate(-50%, -100%) rotate(-45deg) scale(1); }
+}
+
+.map-marker.pulse {
+    animation: markerPulse 2s infinite;
+}
+
+@keyframes markerPulse {
+    0% { 
+        box-shadow: 0 3px 10px rgba(0,0,0,0.3), 0 0 0 0 rgba(220, 53, 69, 0.7);
+        transform: translate(-50%, -100%) rotate(-45deg) scale(1);
+    }
+    70% { 
+        box-shadow: 0 3px 10px rgba(0,0,0,0.3), 0 0 0 20px rgba(220, 53, 69, 0);
+        transform: translate(-50%, -100%) rotate(-45deg) scale(1);
+    }
+    100% { 
+        box-shadow: 0 3px 10px rgba(0,0,0,0.3), 0 0 0 0 rgba(220, 53, 69, 0);
+        transform: translate(-50%, -100%) rotate(-45deg) scale(1);
+    }
+}
+
+.btn-lg {
+    padding: 12px 24px;
+    font-size: 1.1rem;
+}
+
+#saveLocationBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+</style>
+
+<script>
+let currentLatitude = {% if user.latitude %}{{ user.latitude|floatformat:6 }}{% else %}null{% endif %};
+let currentLongitude = {% if user.longitude %}{{ user.longitude|floatformat:6 }}{% else %}null{% endif %};
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('位置更新页面初始化');
+    
+    setupMapEvents();
+    setupFormEvents();
+    updateSaveButton();
+    
+    // 如果有位置信息，显示标记
+    if (currentLatitude && currentLongitude) {
+        showMarkerAtPosition(0.5, 0.5); // 默认显示在中心
+        updateMapInfo(currentLatitude, currentLongitude);
+    }
+});
+
+// 设置地图点击事件
+function setupMapEvents() {
+    const mapCanvas = document.getElementById('mapCanvas');
+    
+    mapCanvas.addEventListener('click', function(event) {
+        const rect = this.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        
+        // 计算相对位置
+        const relativeX = x / rect.width;
+        const relativeY = y / rect.height;
+        
+        // 转换为大概的经纬度 (以北京为中心的区域)
+        const centerLat = 39.9042;
+        const centerLng = 116.4074;
+        const range = 0.5; // 坐标范围
+        
+        const lng = centerLng + (relativeX - 0.5) * range * 2;
+        const lat = centerLat + (0.5 - relativeY) * range * 2;
+        
+        // 更新位置
+        setLocation(lat, lng);
+        showMarkerAtPosition(relativeX, relativeY);
+        
+        console.log('地图点击选择位置:', { lat, lng });
+    });
+}
+
+// 设置表单事件
+function setupFormEvents() {
+    const latInput = document.getElementById('latitude');
+    const lngInput = document.getElementById('longitude');
+    
+    // 监听输入变化
+    latInput.addEventListener('input', function() {
+        currentLatitude = parseFloat(this.value) || null;
+        updateFromInput();
+    });
+    
+    lngInput.addEventListener('input', function() {
+        currentLongitude = parseFloat(this.value) || null;
+        updateFromInput();
+    });
+}
+
+// 从输入框更新
+function updateFromInput() {
+    if (currentLatitude && currentLongitude) {
+        updateMapInfo(currentLatitude, currentLongitude);
+        showMarkerAtCenter();
+        getReverseGeocoding(currentLatitude, currentLongitude);
+    }
+    updateSaveButton();
+}
+
+// 显示标记在指定相对位置
+function showMarkerAtPosition(relativeX, relativeY) {
+    const marker = document.getElementById('mapMarker');
+    const mapCanvas = document.getElementById('mapCanvas');
+    
+    const rect = mapCanvas.getBoundingClientRect();
+    const x = relativeX * rect.width;
+    const y = relativeY * rect.height;
+    
+    marker.style.left = x + 'px';
+    marker.style.top = y + 'px';
+    marker.style.display = 'block';
+    marker.classList.add('pulse');
+}
+
+// 显示标记在中心
+function showMarkerAtCenter() {
+    showMarkerAtPosition(0.5, 0.5);
+}
+
+// 设置位置信息
+function setLocation(lat, lng) {
+    currentLatitude = lat;
+    currentLongitude = lng;
+    
+    document.getElementById('latitude').value = lat.toFixed(6);
+    document.getElementById('longitude').value = lng.toFixed(6);
+    
+    updateMapInfo(lat, lng);
+    updateSaveButton();
+    
+    // 获取地址信息
+    getReverseGeocoding(lat, lng);
+}
+
+// 更新地图信息显示
+function updateMapInfo(lat, lng) {
+    const coordsElement = document.getElementById('mapCoordinates');
+    coordsElement.textContent = `当前位置: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+}
+
+// 更新保存按钮状态
+function updateSaveButton() {
+    const saveBtn = document.getElementById('saveLocationBtn');
+    const hasLocation = currentLatitude && currentLongitude && 
+                       !isNaN(currentLatitude) && !isNaN(currentLongitude) &&
+                       currentLatitude >= -90 && currentLatitude <= 90 &&
+                       currentLongitude >= -180 && currentLongitude <= 180;
+    
+    saveBtn.disabled = !hasLocation;
+    
+    if (hasLocation) {
+        saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>保存位置';
+        saveBtn.classList.remove('btn-secondary');
+        saveBtn.classList.add('btn-success');
+    } else {
+        saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>请先选择位置';
+        saveBtn.classList.remove('btn-success');
+        saveBtn.classList.add('btn-secondary');
+    }
+}
+
+// GPS自动定位
+document.getElementById('getCurrentLocation').addEventListener('click', function() {
+    const btn = this;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>定位中...';
+    btn.disabled = true;
+    
+    if (!navigator.geolocation) {
+        alert('您的浏览器不支持地理定位功能');
+        btn.innerHTML = '<i class="fas fa-crosshairs me-2"></i>GPS自动定位';
+        btn.disabled = false;
+        return;
+    }
+    
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            console.log('GPS定位成功:', { lat, lng, accuracy: position.coords.accuracy });
+            
+            setLocation(lat, lng);
+            showMarkerAtCenter();
+            
+            // 恢复按钮
+            btn.innerHTML = '<i class="fas fa-crosshairs me-2"></i>GPS自动定位';
+            btn.disabled = false;
+            
+            // 显示成功提示
+            showLocationMessage('GPS定位成功！精度约 ' + Math.round(position.coords.accuracy) + ' 米', 'success');
+        },
+        function(error) {
+            console.error('GPS定位失败:', error);
+            
+            let errorMessage = 'GPS定位失败';
+            switch(error.code) {
+                case 1:
+                    errorMessage = '用户拒绝了地理定位权限';
+                    break;
+                case 2:
+                    errorMessage = '无法获取地理位置信息';
+                    break;
+                case 3:
+                    errorMessage = '获取地理位置超时';
+                    break;
+            }
+            
+            alert(errorMessage + '\n\n您可以：\n1. 检查浏览器位置权限\n2. 在地图上手动选择位置\n3. 直接输入经纬度坐标');
+            
+            // 恢复按钮
+            btn.innerHTML = '<i class="fas fa-crosshairs me-2"></i>GPS自动定位';
+            btn.disabled = false;
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 60000
+        }
+    );
+});
+
+// 清除位置
+document.getElementById('clearLocation').addEventListener('click', function() {
+    currentLatitude = null;
+    currentLongitude = null;
+    
+    document.getElementById('latitude').value = '';
+    document.getElementById('longitude').value = '';
+    document.getElementById('address').value = '';
+    
+    document.getElementById('mapMarker').style.display = 'none';
+    document.getElementById('mapCoordinates').textContent = '点击地图或使用GPS定位';
+    
+    updateSaveButton();
+    
+    console.log('位置已清除');
+});
+
+// 反向地理编码获取地址
+function getReverseGeocoding(lat, lng) {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=zh-CN,zh,en`;
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.display_name) {
+                document.getElementById('address').value = data.display_name;
+                console.log('地址获取成功:', data.display_name);
+            }
+        })
+        .catch(error => {
+            console.warn('地址获取失败:', error);
+            // 地址获取失败不影响坐标保存
+        });
+}
+
+// 显示位置消息
+function showLocationMessage(message, type = 'info') {
+    // 创建临时提示
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // 插入到表单前面
+    const form = document.getElementById('locationForm');
+    form.parentNode.insertBefore(alertDiv, form);
+    
+    // 3秒后自动移除
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 3000);
+}
+
+// 表单提交验证
+document.getElementById('locationForm').addEventListener('submit', function(e) {
+    if (!currentLatitude || !currentLongitude) {
+        e.preventDefault();
+        alert('请先选择位置！');
+        return false;
+    }
+    
+    // 显示提交状态
+    const saveBtn = document.getElementById('saveLocationBtn');
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>保存中...';
+    saveBtn.disabled = true;
+});
+</script>
+{% endblock %}

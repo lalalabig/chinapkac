@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}取消请假申请 - 员工管理系统{% endblock %}
+
+{% block extra_css %}
+<style>
+    .warning-section {
+        background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        text-align: center;
+    }
+    
+    .warning-section i {
+        font-size: 3rem;
+        margin-bottom: 15px;
+    }
+    
+    .info-card {
+        border-left: 4px solid #0066cc;
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .application-info {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .info-row {
+        display: flex;
+        padding: 10px 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+        min-width: 120px;
+    }
+    
+    .info-value {
+        color: #212529;
+        flex: 1;
+    }
+    
+    .cancel-form {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- 标题 -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="text-warning mb-0">
+                            <i class="fas fa-ban me-2"></i>取消请假申请
+                        </h2>
+                        <p class="text-muted mb-0">取消已批准的请假申请</p>
+                    </div>
+                    <a href="{% url 'leave_management:my_applications' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> 返回
+                    </a>
+                </div>
+            </div>
+
+            <!-- 警告提示 -->
+            <div class="warning-section">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h4 class="mb-2">注意</h4>
+                <p class="mb-0">取消已批准的请假申请可能需要重新获得批准<br>请确认您的行程安排已经取消</p>
+            </div>
+
+            <!-- 申请信息 -->
+            <div class="application-info">
+                <h5 class="mb-3">
+                    <i class="fas fa-info-circle text-primary me-2"></i>申请信息
+                </h5>
+                <div class="info-row">
+                    <div class="info-label">申请人：</div>
+                    <div class="info-value">{{ application.applicant.get_full_name }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">请假时间：</div>
+                    <div class="info-value">
+                        {{ application.leave_start_date|date:"Y-m-d" }} 至 {{ application.leave_end_date|date:"Y-m-d" }}
+                        （共 {{ application.duration_days }} 天）
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">当前状态：</div>
+                    <div class="info-value">
+                        {% if application.status == 'approved' %}
+                        <span class="badge bg-success">已批准</span>
+                        {% elif application.status == 'pending_task_area' %}
+                        <span class="badge bg-warning">待任务区审批</span>
+                        {% elif application.status == 'pending_head' %}
+                        <span class="badge bg-info">待总部审批</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">申请时间：</div>
+                    <div class="info-value">{{ application.created_at|date:"Y-m-d H:i" }}</div>
+                </div>
+                {% if application.reason %}
+                <div class="info-row">
+                    <div class="info-label">请假事由：</div>
+                    <div class="info-value">{{ application.reason }}</div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- 取消表单 -->
+            <div class="cancel-form">
+                <h5 class="mb-4">
+                    <i class="fas fa-edit text-warning me-2"></i>填写取消原因
+                </h5>
+                
+                <form method="post" id="cancelForm">
+                    {% csrf_token %}
+                    
+                    <div class="mb-4">
+                        <label class="form-label" for="cancellation_reason">
+                            <strong>取消原因</strong>
+                            <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" 
+                                  id="cancellation_reason" 
+                                  name="cancellation_reason" 
+                                  rows="5"
+                                  required
+                                  placeholder="请详细说明取消请假申请的原因..."
+                                  maxlength="500"></textarea>
+                        <small class="text-muted">
+                            请详细说明取消原因，以便管理层了解情况（最多500字）
+                        </small>
+                    </div>
+
+                    <div class="info-card mb-4">
+                        <h6 class="mb-2">
+                            <i class="fas fa-lightbulb me-2"></i>取消说明
+                        </h6>
+                        <ul class="mb-0">
+                            <li>取消后，本次请假申请状态将变更为"已取消"</li>
+                            <li>如需再次请假，需要重新提交申请并等待审批</li>
+                            <li>取消记录将被保留在系统中以供查询</li>
+                            <li>取消原因将通知相关审批人员</li>
+                        </ul>
+                    </div>
+
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" 
+                               type="checkbox" 
+                               id="confirmCancel"
+                               required>
+                        <label class="form-check-label" for="confirmCancel">
+                            我确认要取消此请假申请，并已了解取消后的影响
+                        </label>
+                    </div>
+
+                    <div class="d-flex gap-3">
+                        <button type="submit" 
+                                class="btn btn-warning btn-lg flex-grow-1"
+                                id="submitBtn">
+                            <i class="fas fa-ban me-2"></i>确认取消申请
+                        </button>
+                        <a href="{% url 'leave_management:my_applications' %}" 
+                           class="btn btn-secondary btn-lg">
+                            <i class="fas fa-times me-2"></i>返回
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // 监听确认框
+    $('#confirmCancel').on('change', function() {
+        $('#submitBtn').prop('disabled', !$(this).is(':checked'));
+    });
+    
+    // 初始禁用提交按钮
+    $('#submitBtn').prop('disabled', true);
+    
+    // 提交前确认
+    $('#cancelForm').on('submit', function(e) {
+        const reason = $('#cancellation_reason').val().trim();
+        
+        if (reason.length < 10) {
+            e.preventDefault();
+            alert('取消原因至少需要10个字符，请详细说明');
+            $('#cancellation_reason').focus();
+            return false;
+        }
+        
+        if (!confirm('确定要取消此请假申请吗？此操作不可撤销！')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // 字符计数
+    $('#cancellation_reason').on('input', function() {
+        const length = $(this).val().length;
+        const maxLength = 500;
+        
+        if (length > maxLength) {
+            $(this).val($(this).val().substring(0, maxLength));
+        }
+    });
+});
+</script>
+{% endblock %}

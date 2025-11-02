@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+
+{% block title %}用户详情 - {{ user_obj.username }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4><i class="fas fa-user me-2"></i>用户详情</h4>
+                    <div>
+                        <a href="{% url 'usermanagement:user_edit' user_obj.id %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-edit me-1"></i>编辑
+                        </a>
+                        <a href="{% url 'usermanagement:user_list' %}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left me-1"></i>返回列表
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5><i class="fas fa-info-circle me-2"></i>基本信息</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold">用户名:</td>
+                                    <td>{{ user_obj.username }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">姓名:</td>
+                                    <td>{{ user_obj.first_name }} {{ user_obj.last_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">邮箱:</td>
+                                    <td>{{ user_obj.email|default:'-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">手机号:</td>
+                                    <td>{{ user_obj.phone_number|default:'-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">角色:</td>
+                                    <td>
+                                        {% if user_obj.role == 'superuser' %}
+                                            <span class="badge bg-danger">{{ user_obj.get_role_display }}</span>
+                                        {% elif user_obj.role == 'head_manager' %}
+                                            <span class="badge bg-primary">{{ user_obj.get_role_display }}</span>
+                                        {% elif user_obj.role == 'task_area_manager' %}
+                                            <span class="badge bg-success">{{ user_obj.get_role_display }}</span>
+                                        {% elif user_obj.role == 'employee' %}
+                                            <span class="badge bg-secondary">{{ user_obj.get_role_display }}</span>
+                                        {% else %}
+                                            <span class="badge bg-light text-dark">{{ user_obj.get_role_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">状态:</td>
+                                    <td>
+                                        {% if user_obj.is_active %}
+                                            <span class="badge bg-success">活跃</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">禁用</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5><i class="fas fa-briefcase me-2"></i>工作信息</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold">职位:</td>
+                                    <td>{{ user_obj.position|default:'-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">部门:</td>
+                                    <td>{{ user_obj.department_rank|default:'-' }}</td>
+                                </tr>
+                                <!-- 根据角色显示不同的任务区信息 -->
+                                {% if user_obj.role == 'superuser' %}
+                                    <!-- 超级管理员不显示任务区信息 -->
+                                {% elif user_obj.role == 'head_manager' %}
+                                    <tr>
+                                        <td class="fw-bold">管辖任务区:</td>
+                                        <td>
+                                            {% for area in user_obj.managed_task_areas.all %}
+                                                <span class="badge bg-primary me-1">{{ area.name }}</span>
+                                            {% empty %}
+                                                <span class="text-muted">未分配</span>
+                                            {% endfor %}
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <!-- 任务区负责人和普通员工显示所属任务区 -->
+                                    <tr>
+                                        <td class="fw-bold">所属任务区:</td>
+                                        <td>
+                                            {% if user_obj.task_area_fk %}
+                                                <span class="badge bg-success">{{ user_obj.task_area_fk.name }}</span>
+                                            {% else %}
+                                                <span class="text-muted">未分配</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                                <tr>
+                                    <td class="fw-bold">在职时间:</td>
+                                    <td>
+                                        {% if user_obj.employment_start_date %}
+                                            {{ user_obj.employment_start_date|date:"Y年n月j日" }}
+                                            {% if user_obj.employment_end_date %}
+                                                至 {{ user_obj.employment_end_date|date:"Y年n月j日" }}
+                                            {% else %}
+                                                至今
+                                            {% endif %}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">创建时间:</td>
+                                    <td>{{ user_obj.created_at|date:"Y-m-d H:i" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h5><i class="fas fa-passport me-2"></i>护照信息</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold">护照姓名拼音:</td>
+                                    <td>{{ user_obj.passport_name_pinyin|default:'未设置' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">护照号码:</td>
+                                    <td>{{ user_obj.passport_number|default:'未设置' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">护照有效期:</td>
+                                    <td>
+                                        {% if user_obj.passport_issue_date and user_obj.passport_expiry_date %}
+                                            {{ user_obj.passport_issue_date|date:"Y年n月j日" }} 至 {{ user_obj.passport_expiry_date|date:"Y年n月j日" }}
+                                        {% elif user_obj.passport_expiry_date %}
+                                            到期日期：{{ user_obj.passport_expiry_date|date:"Y年n月j日" }}
+                                        {% elif user_obj.passport_issue_date %}
+                                            签发日期：{{ user_obj.passport_issue_date|date:"Y年n月j日" }}
+                                        {% else %}
+                                            未设置
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    {% if user_obj.latitude and user_obj.longitude %}
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h5><i class="fas fa-map-marker-alt me-2"></i>位置信息</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold">当前位置:</td>
+                                    <td>{{ user_obj.location_address|default:'-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">坐标:</td>
+                                    <td>{{ user_obj.latitude }}, {{ user_obj.longitude }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">更新时间:</td>
+                                    <td>{{ user_obj.location_updated_at|date:"Y-m-d H:i"|default:'-' }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

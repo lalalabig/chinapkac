@@ -1,0 +1,433 @@
+/* 自定义样式表 - 联合国风格 */
+
+:root {
+    --un-blue: #009FDA;
+    --un-blue-dark: #007bb8;
+    --un-blue-light: #33b1e1;
+    --un-light-blue: #e8f4fd;
+    --text-dark: #333333;
+    --text-light: #666666;
+    --border-color: #dee2e6;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+}
+
+/* 全局样式 */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background-color: #f8f9fa;
+    color: var(--text-dark);
+    line-height: 1.6;
+}
+
+/* 联合国蓝色主题 */
+.bg-un-blue {
+    background-color: var(--un-blue) !important;
+}
+
+.text-un-blue {
+    color: var(--un-blue) !important;
+}
+
+.btn-un-blue {
+    background-color: var(--un-blue);
+    border-color: var(--un-blue);
+    color: white;
+}
+
+.btn-un-blue:hover {
+    background-color: var(--un-blue-dark);
+    border-color: var(--un-blue-dark);
+    color: white;
+}
+
+.btn-outline-un-blue {
+    color: var(--un-blue);
+    border-color: var(--un-blue);
+}
+
+.btn-outline-un-blue:hover {
+    background-color: var(--un-blue);
+    border-color: var(--un-blue);
+    color: white;
+}
+
+/* 认证页面样式 */
+.auth-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--un-blue) 0%, var(--un-blue-dark) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.auth-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    max-width: 450px;
+    width: 100%;
+}
+
+.auth-header {
+    background: var(--un-blue);
+    color: white;
+    padding: 30px;
+    text-align: center;
+}
+
+.auth-header h1 {
+    font-size: 28px;
+    font-weight: 300;
+    margin: 0;
+}
+
+.auth-header .subtitle {
+    font-size: 14px;
+    opacity: 0.9;
+    margin-top: 5px;
+}
+
+.auth-body {
+    padding: 40px;
+}
+
+.auth-form .form-group {
+    margin-bottom: 25px;
+}
+
+.auth-form .form-label {
+    font-weight: 500;
+    color: var(--text-dark);
+    margin-bottom: 8px;
+}
+
+.auth-form .form-control {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 12px 15px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.auth-form .form-control:focus {
+    border-color: var(--un-blue);
+    box-shadow: 0 0 0 0.2rem rgba(0, 159, 218, 0.25);
+}
+
+.auth-form .btn {
+    padding: 12px 0;
+    font-size: 16px;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.auth-links {
+    text-align: center;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e9ecef;
+}
+
+.auth-links a {
+    color: var(--un-blue);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.auth-links a:hover {
+    text-decoration: underline;
+}
+
+/* 导航栏样式 */
+.navbar-brand {
+    font-weight: 500;
+    font-size: 20px;
+}
+
+.navbar-nav .nav-link {
+    font-weight: 400;
+    padding: 8px 16px;
+    border-radius: 6px;
+    margin: 0 2px;
+    transition: all 0.3s ease;
+}
+
+.navbar-nav .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 卡片样式 */
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    background-color: var(--un-light-blue);
+    border-bottom: none;
+    padding: 20px;
+    border-radius: 12px 12px 0 0 !important;
+}
+
+.card-title {
+    color: var(--un-blue);
+    font-weight: 600;
+    margin: 0;
+}
+
+/* 按钮样式 */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 10px 20px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: var(--un-blue);
+    border-color: var(--un-blue);
+}
+
+.btn-primary:hover {
+    background-color: var(--un-blue-dark);
+    border-color: var(--un-blue-dark);
+}
+
+/* 表单样式 */
+.form-control, .form-select {
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    padding: 10px 12px;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--un-blue);
+    box-shadow: 0 0 0 0.2rem rgba(0, 159, 218, 0.25);
+}
+
+/* 警告样式 */
+.alert {
+    border-radius: 8px;
+    border: none;
+    padding: 15px 20px;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.alert-info {
+    background-color: var(--un-light-blue);
+    color: var(--un-blue-dark);
+}
+
+/* 表格样式 */
+.table {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table thead th {
+    background-color: var(--un-blue);
+    color: white;
+    border: none;
+    font-weight: 500;
+    padding: 15px;
+}
+
+.table tbody td {
+    padding: 12px 15px;
+    border-color: #e9ecef;
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* 徽章样式 */
+.badge {
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 6px;
+}
+
+.badge-status-approved {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.badge-status-pending {
+    background-color: var(--warning-color);
+    color: #212529;
+}
+
+.badge-status-rejected {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.badge-status-draft {
+    background-color: #6c757d;
+    color: white;
+}
+
+/* 侧边栏样式 */
+.sidebar {
+    background-color: white;
+    min-height: calc(100vh - 76px);
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    padding: 20px 0;
+}
+
+.sidebar .nav-link {
+    color: var(--text-dark);
+    padding: 12px 20px;
+    border-radius: 0;
+    transition: all 0.3s ease;
+}
+
+.sidebar .nav-link:hover,
+.sidebar .nav-link.active {
+    background-color: var(--un-light-blue);
+    color: var(--un-blue);
+}
+
+/* 统计卡片 */
+.stat-card {
+    background: linear-gradient(135deg, var(--un-blue) 0%, var(--un-blue-light) 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 25px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 25px rgba(0, 159, 218, 0.3);
+}
+
+.stat-card .stat-number {
+    font-size: 36px;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.stat-card .stat-label {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .auth-card {
+        margin: 0 10px;
+    }
+    
+    .auth-header {
+        padding: 20px;
+    }
+    
+    .auth-body {
+        padding: 25px;
+    }
+    
+    .navbar-brand {
+        font-size: 18px;
+    }
+    
+    .stat-card {
+        margin-bottom: 15px;
+    }
+}
+
+@media (max-width: 576px) {
+    .container-fluid {
+        padding: 0 10px;
+    }
+    
+    .card {
+        margin-bottom: 15px;
+    }
+    
+    .table-responsive {
+        font-size: 14px;
+    }
+}
+
+/* 动画效果 */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in-up {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+/* 加载动画 */
+.loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--un-blue);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--un-blue-dark);
+}

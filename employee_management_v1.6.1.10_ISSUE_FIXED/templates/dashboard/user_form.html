@@ -1,0 +1,689 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if action == 'create' %}创建用户{% else %}编辑用户{% endif %} - 员工管理系统
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="text-un-blue mb-3">
+                <i class="fas fa-{% if action == 'create' %}plus{% else %}edit{% endif %} me-2"></i>
+                {% if action == 'create' %}创建新用户{% else %}编辑用户{% endif %}
+            </h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard:home' %}">主页</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard:user_management' %}">用户管理</a></li>
+                    <li class="breadcrumb-item active">
+                        {% if action == 'create' %}创建用户{% else %}编辑用户{% endif %}
+                    </li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-user me-2"></i>
+                        {% if action == 'create' %}用户基本信息{% else %}编辑 {{ target_user.username }} 的信息{% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- 基本信息 -->
+                        <div class="mb-4">
+                            <h6 class="text-muted mb-3">
+                                <i class="fas fa-user-circle me-2"></i>基本信息
+                            </h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">用户名 *</label>
+                                    <input type="text" name="username" class="form-control" 
+                                           value="{% if action == 'edit' %}{{ target_user.username }}{% endif %}" 
+                                           required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">邮箱地址 *</label>
+                                    <input type="email" name="email" class="form-control" 
+                                           value="{% if action == 'edit' %}{{ target_user.email }}{% endif %}" 
+                                           required>
+                                </div>
+                            </div>
+                            
+                            {% if action == 'create' %}
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">密码 *</label>
+                                    <input type="password" name="password1" class="form-control" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">确认密码 *</label>
+                                    <input type="password" name="password2" class="form-control" required>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">姓</label>
+                                    <input type="text" name="first_name" class="form-control" 
+                                           value="{% if action == 'edit' %}{{ target_user.first_name }}{% endif %}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">名</label>
+                                    <input type="text" name="last_name" class="form-control" 
+                                           value="{% if action == 'edit' %}{{ target_user.last_name }}{% endif %}">
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">手机号码</label>
+                                    <input type="text" name="phone_number" class="form-control" 
+                                           value="{% if action == 'edit' %}{{ target_user.phone_number }}{% endif %}">
+                                </div>
+                                {% if action == 'edit' %}
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">状态</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="is_active" 
+                                               {% if target_user.is_active %}checked{% endif %}>
+                                        <label class="form-check-label">账户激活</label>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- 角色和权限 -->
+                        <div class="mb-4">
+                            <h6 class="text-muted mb-3">
+                                <i class="fas fa-shield-alt me-2"></i>角色和权限
+                            </h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">用户角色 *</label>
+                                    <select name="role" class="form-select" required>
+                                        {% for role_value, role_display in role_choices %}
+                                        <option value="{{ role_value }}" 
+                                                {% if action == 'edit' and target_user.role == role_value %}selected{% endif %}>
+                                            {{ role_display }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">任务区 *</label>
+                                        <div class="position-relative">
+                                            <select name="task_area_fk" id="task_area_select" class="form-select" required>
+                                                <option value="">请选择任务区</option>
+                                                <!-- 显示现有任务区选项 -->
+                                                {% for task_area in existing_task_areas %}
+                                                <option value="{{ task_area.id }}" 
+                                                        {% if action == 'edit' and target_user.task_area_fk and target_user.task_area_fk.id == task_area.id %}selected{% endif %}>
+                                                    {{ task_area.name }}
+                                                </option>
+                                                {% endfor %}
+                                                <!-- 动态加载任务区选项 -->
+                                                <option value="__new__">+ 新增任务区</option>
+                                            </select>
+                                            <input type="text" id="new_task_area_input" name="new_task_area" 
+                                                   class="form-control mt-2" placeholder="输入新任务区名称" 
+                                                   style="display: none;">
+                                        </div>
+                                        <small class="text-muted">
+                                            <span id="task_area_hint">选择用户所属的任务区域</span>
+                                        </small>
+                                    </div>
+                                
+                                <!-- 总部负责人的多任务区管理 -->
+                                <div class="col-md-6 mb-3" id="head_manager_areas" style="display: none;">
+                                    <label class="form-label">管辖任务区</label>
+                                    <div class="card">
+                                        <div class="card-body p-2">
+                                            <div id="managed_areas_container">
+                                                <!-- 动态添加管辖的任务区 -->
+                                            </div>
+                                            <button type="button" id="add_managed_area_btn" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-plus me-1"></i>添加管辖任务区
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">总部负责人可以管理多个任务区</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 工作信息 -->
+                        <div class="mb-4">
+                            <h6 class="text-muted mb-3">
+                                <i class="fas fa-briefcase me-2"></i>工作信息
+                            </h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">部门</label>
+                                    <input type="text" name="department_rank" class="form-control" 
+                                           value="{% if action == 'edit' %}{{ target_user.department_rank }}{% endif %}"
+                                           placeholder="例如：部长、副部长、主任等">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">职位</label>
+                                    <input type="text" name="position" class="form-control" 
+                                           value="{% if action == 'edit' %}{{ target_user.position }}{% endif %}"
+                                           placeholder="具体职位名称">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 护照信息 -->
+                        <div class="mb-4">
+                            <h6 class="text-muted mb-3">
+                                <i class="fas fa-passport me-2"></i>护照信息
+                            </h6>
+                            
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label">护照姓名拼音</label>
+                                    <input type="text" name="passport_name_pinyin" class="form-control" 
+                                           value="{% if action == 'edit' %}{{ target_user.passport_name_pinyin }}{% endif %}"
+                                           placeholder="护照上的姓名拼音全称">
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label">护照号码</label>
+                                    <input type="text" name="passport_number" class="form-control" 
+                                           value="{% if action == 'edit' %}{{ target_user.passport_number }}{% endif %}"
+                                           placeholder="护照号码">
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">护照签发日期</label>
+                                    <input type="date" name="passport_issue_date" class="form-control" 
+                                           value="{% if action == 'edit' and target_user.passport_issue_date %}{{ target_user.passport_issue_date|date:'Y-m-d' }}{% endif %}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">护照到期日期</label>
+                                    <input type="date" name="passport_expiry_date" class="form-control" 
+                                           value="{% if action == 'edit' and target_user.passport_expiry_date %}{{ target_user.passport_expiry_date|date:'Y-m-d' }}{% endif %}">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 在职时间 -->
+                        <div class="mb-4">
+                            <h6 class="text-muted mb-3">
+                                <i class="fas fa-calendar-alt me-2"></i>在职时间
+                            </h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">在职开始时间</label>
+                                    <input type="date" name="employment_start_date" class="form-control" 
+                                           value="{% if action == 'edit' and target_user.employment_start_date %}{{ target_user.employment_start_date|date:'Y-m-d' }}{% endif %}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">在职结束时间 <small class="text-muted">(如仍在职可留空)</small></label>
+                                    <input type="date" name="employment_end_date" class="form-control" 
+                                           value="{% if action == 'edit' and target_user.employment_end_date %}{{ target_user.employment_end_date|date:'Y-m-d' }}{% endif %}">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 操作按钮 -->
+                        <hr>
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-success me-2">
+                                <i class="fas fa-save me-1"></i>
+                                {% if action == 'create' %}创建用户{% else %}保存修改{% endif %}
+                            </button>
+                            <a href="{% url 'dashboard:user_management' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i>取消
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 帮助信息 -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title">
+                        <i class="fas fa-info-circle me-2"></i>填写说明
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="small">
+                        <h6>角色权限说明：</h6>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <span class="badge bg-primary me-2">超级管理员</span>
+                                系统最高权限，可管理所有功能
+                            </li>
+                            <li class="mb-2">
+                                <span class="badge bg-success me-2">总部负责人</span>
+                                管理任务区负责人和普通员工，可管理多个任务区
+                            </li>
+                            <li class="mb-2">
+                                <span class="badge bg-warning me-2">任务区负责人</span>
+                                管理任务区内的普通员工，处理审批
+                            </li>
+                            <li class="mb-2">
+                                <span class="badge bg-secondary me-2">普通员工</span>
+                                基础功能使用权限
+                            </li>
+                        </ul>
+                        
+                        <hr>
+                        
+                        <h6>注意事项：</h6>
+                        <ul class="list-unstyled small text-muted">
+                            <li>• 用户名必须唯一</li>
+                            <li>• 邮箱地址用于登录和通知</li>
+                            {% if action == 'create' %}
+                            <li>• 密码至少8位字符</li>
+                            {% endif %}
+                            <li>• 任务区分配影响权限范围</li>
+                            <li>• 停用账户将无法登录</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            {% if action == 'edit' %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="card-title">
+                        <i class="fas fa-clock me-2"></i>账户信息
+                    </h6>
+                </div>
+                <div class="card-body small">
+                    <p><strong>创建时间：</strong>{{ target_user.date_joined|date:"Y-m-d H:i" }}</p>
+                    <p><strong>最后登录：</strong>
+                        {% if target_user.last_login %}
+                            {{ target_user.last_login|date:"Y-m-d H:i" }}
+                        {% else %}
+                            从未登录
+                        {% endif %}
+                    </p>
+                    <p><strong>账户状态：</strong>
+                        {% if target_user.is_active %}
+                            <span class="text-success">激活</span>
+                        {% else %}
+                            <span class="text-danger">停用</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 密码强度检查（仅创建时）
+    {% if action == 'create' %}
+    const password1 = document.querySelector('input[name="password1"]');
+    const password2 = document.querySelector('input[name="password2"]');
+    
+    function checkPasswordMatch() {
+        if (password1.value && password2.value) {
+            if (password1.value === password2.value) {
+                password2.setCustomValidity('');
+                password2.classList.remove('is-invalid');
+                password2.classList.add('is-valid');
+            } else {
+                password2.setCustomValidity('密码不匹配');
+                password2.classList.remove('is-valid');
+                password2.classList.add('is-invalid');
+            }
+        }
+    }
+    
+    password1.addEventListener('input', checkPasswordMatch);
+    password2.addEventListener('input', checkPasswordMatch);
+    
+    // 密码强度提示
+    password1.addEventListener('input', function() {
+        const password = this.value;
+        
+        this.classList.remove('is-invalid', 'is-valid');
+        
+        if (password.length > 0) {
+            // 检查密码要求：长度>=6 + 包含字母 + 包含数字
+            const hasMinLength = password.length >= 6;
+            const hasLetter = /[a-zA-Z]/.test(password);
+            const hasNumber = /[0-9]/.test(password);
+            
+            if (hasMinLength && hasLetter && hasNumber) {
+                this.classList.add('is-valid');
+                this.setCustomValidity('');
+            } else {
+                this.classList.add('is-invalid');
+                if (!hasMinLength) {
+                    this.setCustomValidity('密码长度至少6位');
+                } else if (!hasLetter) {
+                    this.setCustomValidity('密码必须包含至少一个字母');
+                } else if (!hasNumber) {
+                    this.setCustomValidity('密码必须包含至少一个数字');
+                }
+            }
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+    {% endif %}
+    
+    // 表单验证
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const username = form.querySelector('input[name="username"]').value;
+        const email = form.querySelector('input[name="email"]').value;
+        
+        if (!username.trim() || !email.trim()) {
+            e.preventDefault();
+            alert('请填写必要的信息');
+            return false;
+        }
+        
+        {% if action == 'create' %}
+        const password1 = form.querySelector('input[name="password1"]').value;
+        const password2 = form.querySelector('input[name="password2"]').value;
+        
+        if (password1 !== password2) {
+            e.preventDefault();
+            alert('两次输入的密码不一致');
+            return false;
+        }
+        
+        // 检查密码要求：长度>=6 + 包含字母 + 包含数字
+        const hasMinLength = password1.length >= 6;
+        const hasLetter = /[a-zA-Z]/.test(password1);
+        const hasNumber = /[0-9]/.test(password1);
+        
+        if (!hasMinLength || !hasLetter || !hasNumber) {
+            e.preventDefault();
+            if (!hasMinLength) {
+                alert('密码长度至少6位');
+            } else if (!hasLetter) {
+                alert('密码必须包含至少一个字母');
+            } else if (!hasNumber) {
+                alert('密码必须包含至少一个数字');
+            }
+            return false;
+        }
+        {% endif %}
+    });
+    
+    // 角色变化处理
+    const roleSelect = document.querySelector('select[name="role"]');
+    const taskAreaSelect = document.getElementById('task_area_select');
+    const newTaskAreaInput = document.getElementById('new_task_area_input');
+    const headManagerAreas = document.getElementById('head_manager_areas');
+    const addManagedAreaBtn = document.getElementById('add_managed_area_btn');
+    const managedAreasContainer = document.getElementById('managed_areas_container');
+    const taskAreaHint = document.getElementById('task_area_hint');
+    
+    // 存储所有现有任务区供下拉框使用
+    const allTaskAreas = [
+        {% for task_area in existing_task_areas %}
+        {id: '{{ task_area.id }}', name: '{{ task_area.name|escapejs }}'},
+        {% endfor %}
+    ];
+    
+    // 角色提示配置
+    const roleHints = {
+        'superuser': '超级管理员默认任务区为"全球"',
+        'head_manager': '总部负责人可以管理多个任务区',
+        'task_area_manager': '任务区负责人只能管理一个任务区',
+        'employee': '普通员工只属于一个任务区'
+    };
+    
+    // 初始化任务区选项（从Django模板数据构建干净的列表）
+    const originalTaskAreas = [];
+    {% for task_area in existing_task_areas %}
+    originalTaskAreas.push({id: '{{ task_area.id }}', name: '{{ task_area.name|escapejs }}'});
+    {% endfor %}
+    
+    // 初始化
+    function initializeTaskAreaByRole() {
+        const selectedRole = roleSelect.value;
+        
+        // 完全清空任务区下拉框
+        taskAreaSelect.innerHTML = '';
+        
+        // 添加默认选项
+        taskAreaSelect.appendChild(new Option('请选择任务区', ''));
+        
+        // 根据角色设置界面
+        if (selectedRole === 'superuser') {
+            // 超级管理员：只显示或创建"全球"任务区
+            let globalArea = originalTaskAreas.find(area => area.name === '全球');
+            if (globalArea) {
+                taskAreaSelect.appendChild(new Option('全球', globalArea.id));
+                taskAreaSelect.value = globalArea.id;
+            } else {
+                taskAreaSelect.appendChild(new Option('全球', 'new_全球'));
+                taskAreaSelect.value = 'new_全球';
+            }
+            taskAreaSelect.disabled = true;
+            headManagerAreas.style.display = 'none';
+            taskAreaSelect.closest('.col-md-6').style.display = 'block';
+            taskAreaHint.textContent = roleHints.superuser;
+            taskAreaSelect.required = true;
+            
+        } else if (selectedRole === 'head_manager') {
+            // 总部负责人：显示多任务区管理，隐藏单一任务区选择
+            taskAreaSelect.disabled = true;
+            taskAreaSelect.closest('.col-md-6').style.display = 'none';
+            headManagerAreas.style.display = 'block';
+            taskAreaHint.textContent = roleHints.head_manager;
+            taskAreaSelect.required = false;
+            
+        } else {
+            // 任务区负责人和普通员工：显示所有任务区
+            originalTaskAreas.forEach(area => {
+                taskAreaSelect.appendChild(new Option(area.name, area.id));
+            });
+            taskAreaSelect.appendChild(new Option('+ 新增任务区', '__new__'));
+            
+            // 恢复已选中的任务区
+            {% if action == 'edit' and target_user.task_area_fk %}
+            taskAreaSelect.value = '{{ target_user.task_area_fk.id }}';
+            {% endif %}
+            
+            taskAreaSelect.disabled = false;
+            taskAreaSelect.closest('.col-md-6').style.display = 'block';
+            headManagerAreas.style.display = 'none';
+            taskAreaHint.textContent = roleHints[selectedRole] || '选择用户所属的任务区域';
+            taskAreaSelect.required = true;
+        }
+    }
+    
+    // 监听角色变化
+    roleSelect.addEventListener('change', function() {
+        initializeTaskAreaByRole();
+    });
+    
+    // 任务区选择处理
+    taskAreaSelect.addEventListener('change', function() {
+        if (this.value === '__new__') {
+            newTaskAreaInput.style.display = 'block';
+            newTaskAreaInput.focus();
+        } else {
+            newTaskAreaInput.style.display = 'none';
+            newTaskAreaInput.value = '';
+        }
+    });
+    
+    // 处理新任务区输入
+    newTaskAreaInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addNewTaskArea();
+        }
+    });
+    
+    newTaskAreaInput.addEventListener('blur', function() {
+        if (this.value.trim()) {
+            addNewTaskArea();
+        }
+    });
+    
+    // 添加新任务区
+    function addNewTaskArea() {
+        const newAreaName = newTaskAreaInput.value.trim();
+        if (!newAreaName) {
+            return;
+        }
+        
+        // 检查名称合法性
+        if (newAreaName.length < 2) {
+            alert('任务区名称至少2个字符');
+            return;
+        }
+        
+        // 检查是否已存在
+        let exists = false;
+        for (let i = 0; i < taskAreaSelect.options.length; i++) {
+            if (taskAreaSelect.options[i].text === newAreaName) {
+                exists = true;
+                taskAreaSelect.value = taskAreaSelect.options[i].value;
+                break;
+            }
+        }
+        
+        if (!exists) {
+            const newOption = new Option(newAreaName, 'new_' + newAreaName);
+            const newTaskOption = taskAreaSelect.querySelector('option[value="__new__"]');
+            taskAreaSelect.insertBefore(newOption, newTaskOption);
+            taskAreaSelect.value = 'new_' + newAreaName;
+        }
+        
+        newTaskAreaInput.style.display = 'none';
+        newTaskAreaInput.value = '';
+    }
+    
+    // ===== 总部负责人的多任务区管理 =====
+    let managedAreaCount = 0;
+    
+    addManagedAreaBtn.addEventListener('click', function() {
+        addManagedAreaField();
+    });
+    
+    // 添加管辖任务区字段（下拉框模式）
+    function addManagedAreaField(selectedAreaName = '') {
+        managedAreaCount++;
+        const fieldId = 'managed_area_' + managedAreaCount;
+        
+        const fieldDiv = document.createElement('div');
+        fieldDiv.className = 'managed-area-item mb-2';
+        fieldDiv.setAttribute('data-field-id', fieldId);
+        
+        // 创建下拉框选项
+        let optionsHTML = '<option value="">请选择任务区</option>';
+        allTaskAreas.forEach(area => {
+            const selected = (selectedAreaName && area.name === selectedAreaName) ? 'selected' : '';
+            optionsHTML += `<option value="${area.name}" ${selected}>${area.name}</option>`;
+        });
+        optionsHTML += '<option value="__new__">+ 新增任务区</option>';
+        
+        fieldDiv.innerHTML = `
+            <div class="input-group">
+                <select class="form-select managed-area-select" onchange="handleManagedAreaChange(this)">
+                    ${optionsHTML}
+                </select>
+                <input type="text" class="form-control managed-area-new-input" 
+                       placeholder="输入新任务区名称" style="display: none;">
+                <input type="hidden" class="managed-area-value" name="managed_task_areas[]" value="${selectedAreaName}">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeManagedAreaField(this)">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        
+        managedAreasContainer.appendChild(fieldDiv);
+        
+        // 更新隐藏字段的值
+        updateManagedAreaValue(fieldDiv);
+    }
+    
+    // 处理管辖任务区下拉框变化
+    window.handleManagedAreaChange = function(selectElement) {
+        const container = selectElement.closest('.managed-area-item');
+        const newInput = container.querySelector('.managed-area-new-input');
+        
+        if (selectElement.value === '__new__') {
+            newInput.style.display = 'block';
+            newInput.focus();
+            // 当输入新名称时更新隐藏字段
+            newInput.addEventListener('input', function() {
+                updateManagedAreaValue(container);
+            });
+        } else {
+            newInput.style.display = 'none';
+            newInput.value = '';
+        }
+        
+        // 更新隐藏字段的值
+        updateManagedAreaValue(container);
+    };
+    
+    // 更新管辖任务区的实际提交值
+    function updateManagedAreaValue(container) {
+        const selectElement = container.querySelector('.managed-area-select');
+        const newInput = container.querySelector('.managed-area-new-input');
+        const hiddenInput = container.querySelector('.managed-area-value');
+        
+        if (selectElement.value === '__new__') {
+            // 使用新输入的名称
+            hiddenInput.value = newInput.value.trim();
+        } else if (selectElement.value) {
+            // 使用选中的现有任务区名称
+            hiddenInput.value = selectElement.value;
+        } else {
+            hiddenInput.value = '';
+        }
+    }
+    
+    // 删除管辖任务区字段
+    window.removeManagedAreaField = function(btn) {
+        btn.closest('.managed-area-item').remove();
+    };
+    
+    // 页面加载时初始化
+    initializeTaskAreaByRole();
+    
+    {% if action == 'edit' and target_user.role == 'head_manager' %}
+    // 编辑模式：加载现有的管辖任务区
+    {% for area in target_user.managed_task_areas.all %}
+    addManagedAreaField('{{ area.name|escapejs }}');
+    {% endfor %}
+    
+    // 如果没有管辖任务区，不自动添加空字段
+    {% if not target_user.managed_task_areas.all %}
+    // 不添加任何字段，用户可以手动点击"添加管辖任务区"按钮
+    {% endif %}
+    {% endif %}
+});
+</script>
+{% endblock %}

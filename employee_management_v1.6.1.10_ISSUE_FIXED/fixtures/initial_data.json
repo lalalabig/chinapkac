@@ -1,0 +1,47 @@
+[
+  {
+    "model": "accounts.taskarea",
+    "pk": 1,
+    "fields": {
+      "name": "东亚区",
+      "description": "东亚地区任务区域",
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "accounts.taskarea",
+    "pk": 2,
+    "fields": {
+      "name": "东南亚区",
+      "description": "东南亚地区任务区域",
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "accounts.taskarea",
+    "pk": 3,
+    "fields": {
+      "name": "非洲区",
+      "description": "非洲地区任务区域",
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "accounts.taskarea",
+    "pk": 4,
+    "fields": {
+      "name": "欧洲区",
+      "description": "欧洲地区任务区域",
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "accounts.taskarea",
+    "pk": 5,
+    "fields": {
+      "name": "美洲区",
+      "description": "美洲地区任务区域",
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  }
+]

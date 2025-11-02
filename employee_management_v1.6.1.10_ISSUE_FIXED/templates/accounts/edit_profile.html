@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}编辑个人资料 - 员工管理系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="text-un-blue mb-3">
+                <i class="fas fa-edit me-2"></i>编辑个人资料
+            </h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard:home' %}">主页</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'accounts:profile' %}">个人资料</a></li>
+                    <li class="breadcrumb-item active">编辑资料</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-user-edit me-2"></i>编辑基本信息
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">姓</label>
+                                {{ form.first_name }}
+                                {% if form.first_name.errors %}
+                                    <div class="text-danger small">{{ form.first_name.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">名</label>
+                                {{ form.last_name }}
+                                {% if form.last_name.errors %}
+                                    <div class="text-danger small">{{ form.last_name.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">邮箱地址</label>
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                    <div class="text-danger small">{{ form.email.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">手机号码</label>
+                                {{ form.phone_number }}
+                                {% if form.phone_number.errors %}
+                                    <div class="text-danger small">{{ form.phone_number.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- 护照信息 -->
+                        <div class="mb-3">
+                            <h6 class="text-muted">
+                                <i class="fas fa-passport me-2"></i>护照信息
+                            </h6>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">护照姓名拼音全称</label>
+                                {{ form.passport_name_pinyin }}
+                                {% if form.passport_name_pinyin.errors %}
+                                    <div class="text-danger small">{{ form.passport_name_pinyin.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">护照号码</label>
+                                {{ form.passport_number }}
+                                {% if form.passport_number.errors %}
+                                    <div class="text-danger small">{{ form.passport_number.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">护照签发日期</label>
+                                {{ form.passport_issue_date }}
+                                {% if form.passport_issue_date.errors %}
+                                    <div class="text-danger small">{{ form.passport_issue_date.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">护照到期日期</label>
+                                {{ form.passport_expiry_date }}
+                                {% if form.passport_expiry_date.errors %}
+                                    <div class="text-danger small">{{ form.passport_expiry_date.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- 工作信息 -->
+                        <div class="mb-3">
+                            <h6 class="text-muted">
+                                <i class="fas fa-briefcase me-2"></i>工作信息
+                            </h6>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">部门</label>
+                                {{ form.department_rank }}
+                                {% if form.department_rank.errors %}
+                                    <div class="text-danger small">{{ form.department_rank.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">任务区</label>
+                                {{ form.task_area }}
+                                {% if form.task_area.errors %}
+                                    <div class="text-danger small">{{ form.task_area.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">职位</label>
+                                {{ form.position }}
+                                {% if form.position.errors %}
+                                    <div class="text-danger small">{{ form.position.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- 在职时间 -->
+                        <div class="mb-3">
+                            <h6 class="text-muted">
+                                <i class="fas fa-calendar-alt me-2"></i>在职时间
+                            </h6>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">在职开始时间</label>
+                                {{ form.employment_start_date }}
+                                {% if form.employment_start_date.errors %}
+                                    <div class="text-danger small">{{ form.employment_start_date.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">在职结束时间 <small class="text-muted">(如仍在职可留空)</small></label>
+                                {{ form.employment_end_date }}
+                                {% if form.employment_end_date.errors %}
+                                    <div class="text-danger small">{{ form.employment_end_date.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-un-blue me-2">
+                                <i class="fas fa-save me-1"></i>保存修改
+                            </button>
+                            <a href="{% url 'accounts:profile' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i>取消
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

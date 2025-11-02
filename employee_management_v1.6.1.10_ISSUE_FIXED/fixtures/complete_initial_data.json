@@ -1,0 +1,216 @@
+[
+  {
+    "model": "accounts.taskarea",
+    "pk": 1,
+    "fields": {
+      "name": "成功职等",
+      "description": "成功职等任务区",
+      "created_at": "2025-10-15T13:42:16.174Z"
+    }
+  },
+  {
+    "model": "accounts.taskarea",
+    "pk": 2,
+    "fields": {
+      "name": "等待确认的未分配实习等",
+      "description": "等待确认的未分配实习等任务区",
+      "created_at": "2025-10-15T13:42:16.195Z"
+    }
+  },
+  {
+    "model": "accounts.taskarea",
+    "pk": 3,
+    "fields": {
+      "name": "无等级的员工等",
+      "description": "无等级的员工等任务区",
+      "created_at": "2025-10-15T13:42:16.214Z"
+    }
+  },
+  {
+    "model": "accounts.taskarea",
+    "pk": 4,
+    "fields": {
+      "name": "管理层",
+      "description": "管理层任务区",
+      "created_at": "2025-10-15T13:42:16.233Z"
+    }
+  },
+  {
+    "model": "accounts.taskarea",
+    "pk": 6,
+    "fields": {
+      "name": "测试新任务区",
+      "description": "这是通过用户界面创建的新任务区",
+      "created_at": "2025-10-15T13:45:17.179Z"
+    }
+  },
+  {
+    "model": "accounts.taskarea",
+    "pk": 7,
+    "fields": {
+      "name": "北京",
+      "description": "从用户数据迁移的任务区：北京",
+      "created_at": "2025-10-15T16:18:54.380Z"
+    }
+  },
+  {
+    "model": "accounts.taskarea",
+    "pk": 8,
+    "fields": {
+      "name": "全球",
+      "description": "从用户数据迁移的任务区：全球",
+      "created_at": "2025-10-15T16:18:54.393Z"
+    }
+  },
+  {
+    "model": "accounts.user",
+    "pk": 1,
+    "fields": {
+      "password": "pbkdf2_sha256$1000000$EfgAja9y28rabJ9B4ZJy3y$MMuA7FtYwARMzmIm+Jm5zOJ9ygxoPOBO07SqsLhx9VI=",
+      "last_login": "2025-10-13T13:13:19.066Z",
+      "is_superuser": false,
+      "username": "employee01",
+      "first_name": "张",
+      "last_name": "三",
+      "email": "employee@company.com",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2025-10-13T09:30:23.004Z",
+      "passport_name_pinyin": "Test User 1",
+      "passport_number": "P00000001",
+      "passport_issue_date": "2020-01-01",
+      "passport_expiry_date": "2030-01-01",
+      "phone_number": "13800138000",
+      "department_rank": "高级开发工程师",
+      "task_area": "北京",
+      "task_area_fk": 7,
+      "position": "软件工程师",
+      "employment_start_date": "2022-01-01",
+      "employment_end_date": "2024-12-31",
+      "role": "employee",
+      "latitude": 40.7128,
+      "longitude": -74.006,
+      "location_address": "美国纽约曼哈顿",
+      "location_updated_at": "2025-10-14T09:13:16.804Z",
+      "created_at": "2025-10-13T09:30:23.004Z",
+      "updated_at": "2025-10-19T08:01:06.378Z",
+      "groups": [],
+      "user_permissions": [],
+      "managed_task_areas": []
+    }
+  },
+  {
+    "model": "accounts.user",
+    "pk": 2,
+    "fields": {
+      "password": "pbkdf2_sha256$1000000$EfgAja9y28rabJ9B4ZJy3y$MMuA7FtYwARMzmIm+Jm5zOJ9ygxoPOBO07SqsLhx9VI=",
+      "last_login": "2025-10-13T13:13:19.592Z",
+      "is_superuser": false,
+      "username": "branch_manager01",
+      "first_name": "李",
+      "last_name": "四",
+      "email": "branch@company.com",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2025-10-13T09:30:23.420Z",
+      "passport_name_pinyin": "Test User 2",
+      "passport_number": "P00000002",
+      "passport_issue_date": "2020-01-01",
+      "passport_expiry_date": "2030-01-01",
+      "phone_number": "",
+      "department_rank": "北京分公司-经理",
+      "task_area": "北京",
+      "task_area_fk": 7,
+      "position": "分公司负责人",
+      "employment_start_date": "2022-01-01",
+      "employment_end_date": null,
+      "role": "task_area_manager",
+      "latitude": 31.2304,
+      "longitude": 121.4737,
+      "location_address": "上海市浦东新区",
+      "location_updated_at": "2025-10-14T09:11:51.866Z",
+      "created_at": "2025-10-13T09:30:23.420Z",
+      "updated_at": "2025-10-19T08:01:07.249Z",
+      "groups": [],
+      "user_permissions": [],
+      "managed_task_areas": []
+    }
+  },
+  {
+    "model": "accounts.user",
+    "pk": 3,
+    "fields": {
+      "password": "pbkdf2_sha256$1000000$EfgAja9y28rabJ9B4ZJy3y$MMuA7FtYwARMzmIm+Jm5zOJ9ygxoPOBO07SqsLhx9VI=",
+      "last_login": "2025-10-14T09:22:26.775Z",
+      "is_superuser": false,
+      "username": "head_manager01",
+      "first_name": "王",
+      "last_name": "五",
+      "email": "head@company.com",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2025-10-13T09:30:23.824Z",
+      "passport_name_pinyin": "Test User 3",
+      "passport_number": "P00000003",
+      "passport_issue_date": "2020-01-01",
+      "passport_expiry_date": "2030-01-01",
+      "phone_number": "",
+      "department_rank": "总部-高级经理",
+      "task_area": "全球",
+      "task_area_fk": 8,
+      "position": "总部负责人",
+      "employment_start_date": "2022-01-01",
+      "employment_end_date": null,
+      "role": "head_manager",
+      "latitude": null,
+      "longitude": null,
+      "location_address": "",
+      "location_updated_at": null,
+      "created_at": "2025-10-13T09:30:23.825Z",
+      "updated_at": "2025-10-19T08:01:08.068Z",
+      "groups": [],
+      "user_permissions": [],
+      "managed_task_areas": [
+        7,
+        8
+      ]
+    }
+  },
+  {
+    "model": "accounts.user",
+    "pk": 4,
+    "fields": {
+      "password": "pbkdf2_sha256$1000000$EfgAja9y28rabJ9B4ZJy3y$MMuA7FtYwARMzmIm+Jm5zOJ9ygxoPOBO07SqsLhx9VI=",
+      "last_login": "2025-10-14T09:22:27.021Z",
+      "is_superuser": true,
+      "username": "superuser01",
+      "first_name": "赵",
+      "last_name": "六",
+      "email": "admin@company.com",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2025-10-13T09:30:24.225Z",
+      "passport_name_pinyin": "Test User 4",
+      "passport_number": "P00000004",
+      "passport_issue_date": "2020-01-01",
+      "passport_expiry_date": "2030-01-01",
+      "phone_number": "",
+      "department_rank": "IT部-系统管理员",
+      "task_area": "全球",
+      "task_area_fk": 8,
+      "position": "超级管理员",
+      "employment_start_date": "2022-01-01",
+      "employment_end_date": "2024-12-31",
+      "role": "superuser",
+      "latitude": null,
+      "longitude": null,
+      "location_address": "",
+      "location_updated_at": null,
+      "created_at": "2025-10-13T09:30:24.225Z",
+      "updated_at": "2025-10-19T08:01:08.878Z",
+      "groups": [],
+      "user_permissions": [],
+      "managed_task_areas": []
+    }
+  }
+]

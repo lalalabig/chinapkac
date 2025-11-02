@@ -1,0 +1,499 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}员工位置地图 - 员工管理系统{% endblock %}
+
+{% block extra_css %}
+<style>
+    #map {
+        height: 500px;
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .user-info-card {
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .user-info-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .user-marker {
+        cursor: pointer;
+    }
+    
+    .legend {
+        background: white;
+        padding: 10px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        margin: 10px;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+    }
+    
+    .legend-color {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+    
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    
+    .filter-section {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    @media (max-width: 768px) {
+        #map {
+            height: 300px;
+        }
+        
+        .user-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="text-un-blue mb-3">
+                <i class="fas fa-map-marked-alt me-2"></i>员工位置地图
+            </h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard:home' %}">主页</a></li>
+                    <li class="breadcrumb-item active">位置地图</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <!-- 统计信息 -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h3>{{ total_users }}</h3>
+                <p class="mb-0">位置已更新的员工</p>
+            </div>
+        </div>
+        <div class="col-md-9">
+            <div class="filter-section">
+                <div class="row align-items-center">
+                    <div class="col-md-4">
+                        <label class="form-label">筛选角色：</label>
+                        <select id="roleFilter" class="form-select">
+                            <option value="">全部角色</option>
+                            <option value="普通员工">普通员工</option>
+                            <option value="分公司负责人">分公司负责人</option>
+                            <option value="总部负责人">总部负责人</option>
+                            <option value="超级管理员">超级管理员</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">搜索用户：</label>
+                        <input type="text" id="userSearch" class="form-control" placeholder="输入用户名或姓名">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">&nbsp;</label>
+                        <div>
+                            <button id="refreshMap" class="btn btn-primary">
+                                <i class="fas fa-sync-alt me-1"></i>刷新地图
+                            </button>
+                            <button id="centerMap" class="btn btn-outline-secondary">
+                                <i class="fas fa-crosshairs me-1"></i>居中显示
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- 地图区域 -->
+        <div class="col-lg-8 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-globe me-2"></i>实时位置地图
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div id="map"></div>
+                </div>
+            </div>
+            
+            <!-- 图例 -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6>图例说明</h6>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #dc3545;"></div>
+                                <span>普通员工</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #ffc107;"></div>
+                                <span>分公司负责人</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #28a745;"></div>
+                                <span>总部负责人</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #007bff;"></div>
+                                <span>超级管理员</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 用户列表 -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-users me-2"></i>用户列表
+                    </h5>
+                </div>
+                <div class="card-body user-list" style="max-height: 600px; overflow-y: auto;">
+                    <div id="userCards">
+                        <!-- 用户卡片将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap">
+</script>
+
+<script>
+let map;
+let markers = [];
+let infoWindows = [];
+let usersData = {{ users_data|safe }};
+
+// 角色对应的标记颜色 - 与用户管理界面保持一致
+const roleColors = {
+    '普通员工': '#6c757d',        // Bootstrap secondary 灰色
+    '分公司负责人': '#ffc107',    // Bootstrap warning 黄色  
+    '总部负责人': '#198754',      // Bootstrap success 绿色
+    '超级管理员': '#0d6efd',      // Bootstrap primary 蓝色
+    // 英文角色名称支持
+    'employee': '#6c757d',         // Bootstrap secondary 灰色
+    'task_area_manager': '#ffc107', // Bootstrap warning 黄色
+    'head_manager': '#198754',     // Bootstrap success 绿色
+    'superuser': '#0d6efd'         // Bootstrap primary 蓝色
+};
+
+function initMap() {
+    // 默认中心位置（中国中心）
+    const center = { lat: 35.0, lng: 104.0 };
+    
+    // 初始化地图
+    map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 4,
+        center: center,
+        mapTypeId: 'roadmap'
+    });
+    
+    // 添加所有用户标记
+    addUserMarkers();
+    
+    // 自动调整地图视图以包含所有标记
+    fitMapToMarkers();
+    
+    // 生成用户卡片
+    generateUserCards();
+}
+
+function addUserMarkers() {
+    // 清除现有标记
+    clearMarkers();
+    
+    usersData.forEach((user, index) => {
+        const position = { lat: user.latitude, lng: user.longitude };
+        
+        // 创建自定义标记
+        const marker = new google.maps.Marker({
+            position: position,
+            map: map,
+            title: user.username,
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                fillColor: roleColors[user.role] || '#6c757d',
+                fillOpacity: 0.8,
+                stroke: '#ffffff',
+                strokeWeight: 2,
+                scale: 10
+            }
+        });
+        
+        // 创建信息窗口
+        const infoWindow = new google.maps.InfoWindow({
+            content: `
+                <div style="padding: 10px; min-width: 200px;">
+                    <h6 style="margin: 0 0 10px 0; color: ${roleColors[user.role]};">
+                        <i class="fas fa-user"></i> ${user.username}
+                    </h6>
+                    <p style="margin: 5px 0;"><strong>姓名：</strong>${user.name || '未设置'}</p>
+                    <p style="margin: 5px 0;"><strong>角色：</strong>${user.role}</p>
+                    <p style="margin: 5px 0;"><strong>位置：</strong>${user.address}</p>
+                    <p style="margin: 5px 0;"><strong>更新时间：</strong>${user.updated_at}</p>
+                    <hr style="margin: 10px 0;">
+                    <small style="color: #6c757d;">经纬度: ${user.latitude.toFixed(6)}, ${user.longitude.toFixed(6)}</small>
+                </div>
+            `
+        });
+        
+        // 标记点击事件
+        marker.addListener('click', function() {
+            // 关闭其他信息窗口
+            infoWindows.forEach(iw => iw.close());
+            
+            // 打开当前信息窗口
+            infoWindow.open(map, marker);
+            
+            // 高亮对应的用户卡片
+            highlightUserCard(user.username);
+        });
+        
+        markers.push(marker);
+        infoWindows.push(infoWindow);
+    });
+}
+
+function clearMarkers() {
+    markers.forEach(marker => marker.setMap(null));
+    markers = [];
+    infoWindows.forEach(iw => iw.close());
+    infoWindows = [];
+}
+
+function fitMapToMarkers() {
+    if (markers.length === 0) return;
+    
+    const bounds = new google.maps.LatLngBounds();
+    markers.forEach(marker => {
+        bounds.extend(marker.getPosition());
+    });
+    
+    map.fitBounds(bounds);
+    
+    // 确保缩放级别不会太高
+    google.maps.event.addListenerOnce(map, 'bounds_changed', function() {
+        if (map.getZoom() > 15) {
+            map.setZoom(15);
+        }
+    });
+}
+
+function generateUserCards() {
+    const container = document.getElementById('userCards');
+    container.innerHTML = '';
+    
+    if (usersData.length === 0) {
+        container.innerHTML = '<p class="text-muted text-center">暂无位置数据</p>';
+        return;
+    }
+    
+    usersData.forEach(user => {
+        const card = document.createElement('div');
+        card.className = 'user-info-card card';
+        card.dataset.username = user.username;
+        card.dataset.role = user.role;
+        
+        card.innerHTML = `
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <div class="legend-color" style="background-color: ${roleColors[user.role]}; width: 16px; height: 16px;"></div>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="card-title mb-1">${user.username}</h6>
+                        <small class="text-muted">${user.role}</small>
+                    </div>
+                </div>
+                <hr class="my-2">
+                <p class="card-text small mb-1">
+                    <i class="fas fa-map-marker-alt me-1"></i>${user.address}
+                </p>
+                <p class="card-text small mb-0 text-muted">
+                    <i class="fas fa-clock me-1"></i>${user.updated_at}
+                </p>
+            </div>
+        `;
+        
+        // 卡片点击事件
+        card.addEventListener('click', function() {
+            const marker = markers[usersData.indexOf(user)];
+            if (marker) {
+                map.setCenter(marker.getPosition());
+                map.setZoom(15);
+                
+                // 触发标记点击事件
+                google.maps.event.trigger(marker, 'click');
+            }
+        });
+        
+        container.appendChild(card);
+    });
+}
+
+function highlightUserCard(username) {
+    // 移除所有高亮
+    document.querySelectorAll('.user-info-card').forEach(card => {
+        card.classList.remove('border-primary');
+    });
+    
+    // 高亮指定用户卡片
+    const targetCard = document.querySelector(`[data-username="${username}"]`);
+    if (targetCard) {
+        targetCard.classList.add('border-primary');
+        targetCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+
+// 筛选功能
+document.getElementById('roleFilter').addEventListener('change', function() {
+    filterUsers();
+});
+
+document.getElementById('userSearch').addEventListener('input', function() {
+    filterUsers();
+});
+
+function filterUsers() {
+    const roleFilter = document.getElementById('roleFilter').value;
+    const searchText = document.getElementById('userSearch').value.toLowerCase();
+    
+    const filteredData = usersData.filter(user => {
+        const matchesRole = !roleFilter || user.role === roleFilter;
+        const matchesSearch = !searchText || 
+            user.username.toLowerCase().includes(searchText) ||
+            user.name.toLowerCase().includes(searchText);
+        
+        return matchesRole && matchesSearch;
+    });
+    
+    // 更新地图标记
+    clearMarkers();
+    
+    filteredData.forEach((user, index) => {
+        const position = { lat: user.latitude, lng: user.longitude };
+        
+        const marker = new google.maps.Marker({
+            position: position,
+            map: map,
+            title: user.username,
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                fillColor: roleColors[user.role] || '#6c757d',
+                fillOpacity: 0.8,
+                stroke: '#ffffff',
+                strokeWeight: 2,
+                scale: 10
+            }
+        });
+        
+        const infoWindow = new google.maps.InfoWindow({
+            content: `
+                <div style="padding: 10px; min-width: 200px;">
+                    <h6 style="margin: 0 0 10px 0; color: ${roleColors[user.role]};">
+                        <i class="fas fa-user"></i> ${user.username}
+                    </h6>
+                    <p style="margin: 5px 0;"><strong>姓名：</strong>${user.name || '未设置'}</p>
+                    <p style="margin: 5px 0;"><strong>角色：</strong>${user.role}</p>
+                    <p style="margin: 5px 0;"><strong>位置：</strong>${user.address}</p>
+                    <p style="margin: 5px 0;"><strong>更新时间：</strong>${user.updated_at}</p>
+                    <hr style="margin: 10px 0;">
+                    <small style="color: #6c757d;">经纬度: ${user.latitude.toFixed(6)}, ${user.longitude.toFixed(6)}</small>
+                </div>
+            `
+        });
+        
+        marker.addListener('click', function() {
+            infoWindows.forEach(iw => iw.close());
+            infoWindow.open(map, marker);
+            highlightUserCard(user.username);
+        });
+        
+        markers.push(marker);
+        infoWindows.push(infoWindow);
+    });
+    
+    // 更新用户卡片显示
+    document.querySelectorAll('.user-info-card').forEach(card => {
+        const username = card.dataset.username;
+        const role = card.dataset.role;
+        const shouldShow = filteredData.some(user => 
+            user.username === username && user.role === role
+        );
+        
+        card.style.display = shouldShow ? 'block' : 'none';
+    });
+    
+    // 调整地图视图
+    if (filteredData.length > 0) {
+        fitMapToMarkers();
+    }
+}
+
+// 刷新按钮
+document.getElementById('refreshMap').addEventListener('click', function() {
+    window.location.reload();
+});
+
+// 居中按钮
+document.getElementById('centerMap').addEventListener('click', function() {
+    fitMapToMarkers();
+});
+
+// 地图加载失败处理
+window.gm_authFailure = function() {
+    document.getElementById('map').innerHTML = 
+        '<div class="alert alert-warning text-center p-5">' +
+        '<h5>地图服务暂时不可用</h5>' +
+        '<p>请检查网络连接或联系管理员配置API密钥</p>' +
+        '</div>';
+};
+</script>
+{% endblock %}

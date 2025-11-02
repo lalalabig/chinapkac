@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}清理旧报告 - 员工管理系统{% endblock %}
+
+{% block extra_css %}
+<style>
+    .warning-card {
+        background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+        color: white;
+        border: none;
+        border-radius: 15px;
+        padding: 30px;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .warning-icon {
+        font-size: 5rem;
+        margin-bottom: 20px;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+        50% {
+            transform: scale(1.1);
+            opacity: 0.8;
+        }
+    }
+    
+    .info-box {
+        background-color: #f8f9fa;
+        border-left: 4px solid #0066cc;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .danger-box {
+        background-color: #fff5f5;
+        border-left: 4px solid #dc3545;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .stat-item {
+        padding: 20px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 15px;
+        text-align: center;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #dc3545;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-top: 5px;
+    }
+    
+    .confirm-checkbox {
+        transform: scale(1.5);
+        margin-right: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- 标题 -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="text-danger mb-0">
+                            <i class="fas fa-exclamation-triangle me-2"></i>清理旧报告
+                        </h2>
+                        <p class="text-muted mb-0">清理6个月前的历史报告</p>
+                    </div>
+                    <a href="{% url 'reports:manage_reports' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> 返回
+                    </a>
+                </div>
+            </div>
+
+            <!-- 警告卡片 -->
+            <div class="warning-card">
+                <div class="warning-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3 class="mb-3">⚠️ 危险操作警告</h3>
+                <p class="mb-0" style="font-size: 1.1rem;">
+                    此操作将<strong>永久删除</strong>旧报告文件和数据库记录<br>
+                    删除后<strong>无法恢复</strong>，请谨慎操作！
+                </p>
+            </div>
+
+            <!-- 统计信息 -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="stat-item">
+                        <div class="stat-number">{{ old_count }}</div>
+                        <div class="stat-label">份报告将被删除</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="stat-item">
+                        <div class="stat-number">{{ cutoff_date|date:"Y-m-d" }}</div>
+                        <div class="stat-label">截止日期（含）之前</div>
+                    </div>
+                </div>
+            </div>
+
+            {% if old_count > 0 %}
+            <!-- 详细信息 -->
+            <div class="info-box">
+                <h5 class="mb-3">
+                    <i class="fas fa-info-circle text-primary me-2"></i>清理说明
+                </h5>
+                <ul class="mb-0">
+                    <li>将删除 <strong>{{ cutoff_date|date:"Y年m月d日" }}</strong>（含）之前上传的所有报告</li>
+                    <li>共计 <strong class="text-danger">{{ old_count }}</strong> 份报告将被永久删除</li>
+                    <li>报告文件将从服务器存储中删除</li>
+                    <li>数据库中的相关记录也将被删除</li>
+                    <li>此操作<strong class="text-danger">不可逆</strong>，请确保已做好备份</li>
+                </ul>
+            </div>
+
+            <!-- 危险提示 -->
+            <div class="danger-box">
+                <h5 class="mb-3">
+                    <i class="fas fa-exclamation-circle text-danger me-2"></i>删除前请确认
+                </h5>
+                <div class="form-check mb-3">
+                    <input class="form-check-input confirm-checkbox" 
+                           type="checkbox" 
+                           id="confirmUnderstand">
+                    <label class="form-check-label" for="confirmUnderstand">
+                        我已了解此操作将永久删除旧报告，且无法恢复
+                    </label>
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input confirm-checkbox" 
+                           type="checkbox" 
+                           id="confirmBackup">
+                    <label class="form-check-label" for="confirmBackup">
+                        我已确认重要报告已做好备份
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input confirm-checkbox" 
+                           type="checkbox" 
+                           id="confirmProceed">
+                    <label class="form-check-label" for="confirmProceed">
+                        我确认要继续执行清理操作
+                    </label>
+                </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <form method="post" id="cleanupForm">
+                {% csrf_token %}
+                <div class="d-flex gap-3">
+                    <button type="submit" 
+                            class="btn btn-danger btn-lg flex-grow-1" 
+                            id="confirmBtn"
+                            disabled>
+                        <i class="fas fa-trash-alt me-2"></i>确认清理 {{ old_count }} 份报告
+                    </button>
+                    <a href="{% url 'reports:manage_reports' %}" 
+                       class="btn btn-secondary btn-lg">
+                        <i class="fas fa-times me-2"></i>取消
+                    </a>
+                </div>
+            </form>
+
+            {% else %}
+            <!-- 无需清理 -->
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+                    <h4 class="mb-3">无需清理</h4>
+                    <p class="text-muted mb-4">
+                        没有找到 {{ cutoff_date|date:"Y年m月d日" }} 之前的报告<br>
+                        系统报告存储良好，无需执行清理操作
+                    </p>
+                    <a href="{% url 'reports:manage_reports' %}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left me-2"></i>返回报告管理
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 温馨提示 -->
+            <div class="alert alert-warning mt-4">
+                <i class="fas fa-lightbulb me-2"></i>
+                <strong>温馨提示：</strong>
+                建议在执行清理操作前：
+                <ol class="mb-0 mt-2">
+                    <li>使用批量下载功能下载需要保留的旧报告</li>
+                    <li>备份数据库以防误操作</li>
+                    <li>在系统使用低峰期执行清理操作</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // 监听确认框的变化
+    function checkConfirmations() {
+        const allChecked = $('#confirmUnderstand').is(':checked') &&
+                          $('#confirmBackup').is(':checked') &&
+                          $('#confirmProceed').is(':checked');
+        
+        $('#confirmBtn').prop('disabled', !allChecked);
+    }
+    
+    $('.confirm-checkbox').on('change', checkConfirmations);
+    
+    // 提交前二次确认
+    $('#cleanupForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const count = {{ old_count }};
+        const message = `⚠️ 最后确认\n\n您即将永久删除 ${count} 份报告！\n\n此操作不可撤销，确定要继续吗？`;
+        
+        if (confirm(message)) {
+            // 再次确认
+            if (confirm('真的要删除吗？删除后无法恢复！')) {
+                this.submit();
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

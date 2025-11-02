@@ -1,0 +1,413 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}请假管理仪表板 - 员工管理系统{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-stat-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        margin-bottom: 20px;
+        min-height: 160px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    
+    .dashboard-stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+    
+    .stat-icon {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        opacity: 0.9;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    
+    .stat-label {
+        font-size: 1rem;
+        color: #6c757d;
+        margin-bottom: 10px;
+    }
+    
+    .stat-link {
+        color: inherit;
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+    
+    .stat-link:hover {
+        text-decoration: underline;
+    }
+    
+    .leave-card {
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-left: 4px solid #0066cc;
+        transition: all 0.3s ease;
+    }
+    
+    .leave-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transform: translateX(5px);
+    }
+    
+    .leave-card-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .leave-date {
+        font-weight: 600;
+        color: #0066cc;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        opacity: 0.5;
+    }
+    
+    .section-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 页面标题 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="text-un-blue mb-0">
+                <i class="fas fa-chart-line me-2"></i>请假管理仪表板
+            </h2>
+            <p class="text-muted mb-0">实时监控员工请假状态和待办事项</p>
+        </div>
+    </div>
+
+    {% if task_areas %}
+    <!-- 筛选表单（仅超级管理员和总部负责人可见） -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="task_area" class="form-label">
+                                <i class="fas fa-map-marker-alt"></i> 按任务区筛选
+                            </label>
+                            <select name="task_area" id="task_area" class="form-select">
+                                <option value="">全部任务区</option>
+                                {% for task_area in task_areas %}
+                                    <option value="{{ task_area.id }}" {% if task_area_filter == task_area.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ task_area.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="name" class="form-label">
+                                <i class="fas fa-user"></i> 按姓名搜索
+                            </label>
+                            <input type="text" name="name" id="name" class="form-control" 
+                                   placeholder="输入姓名或用户名" value="{{ name_filter }}">
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="fas fa-search"></i> 筛选
+                            </button>
+                            <a href="{% url 'leave_management:dashboard' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-redo"></i> 重置
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 统计卡片 -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-stat-card" style="background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%); color: white;">
+                <div>
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-number">{{ pending_count }}</div>
+                    <div class="stat-label" style="color: rgba(255,255,255,0.9);">待审批申请</div>
+                </div>
+                <a href="{% url 'leave_management:pending_approvals' %}" class="stat-link" style="color: white;">
+                    查看待审批 <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-stat-card" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); color: white;">
+                <div>
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-number">{{ planned_leaves.count }}</div>
+                    <div class="stat-label" style="color: rgba(255,255,255,0.9);">计划休假</div>
+                </div>
+                <div class="stat-link" style="color: rgba(255,255,255,0.8); cursor: default;">
+                    已批准未开始
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-stat-card" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white;">
+                <div>
+                    <div class="stat-icon">
+                        <i class="fas fa-user-clock"></i>
+                    </div>
+                    <div class="stat-number">{{ on_leave.count }}</div>
+                    <div class="stat-label" style="color: rgba(255,255,255,0.9);">正在休假</div>
+                </div>
+                <div class="stat-link" style="color: rgba(255,255,255,0.8); cursor: default;">
+                    当前休假中
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-stat-card" style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%); color: white;">
+                <div>
+                    <div class="stat-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <div class="stat-number">{{ history.count }}</div>
+                    <div class="stat-label" style="color: rgba(255,255,255,0.9);">历史记录</div>
+                </div>
+                <div class="stat-link" style="color: rgba(255,255,255,0.8); cursor: default;">
+                    最近10条记录
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- 左侧：计划休假和正在休假 -->
+        <div class="col-lg-6">
+            <!-- 计划休假 -->
+            <div class="section-card">
+                <h5 class="mb-3">
+                    <i class="fas fa-calendar-alt text-info me-2"></i>计划休假
+                    <span class="badge bg-info ms-2">{{ planned_leaves.count }}</span>
+                </h5>
+                
+                {% if planned_leaves %}
+                <div class="leave-list">
+                    {% for leave in planned_leaves|slice:":5" %}
+                    <div class="leave-card" style="border-left-color: #17a2b8;">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-user text-info me-2"></i>
+                                    <strong>{{ leave.applicant.get_full_name }}</strong>
+                                    <span class="ms-2 text-muted">|</span>
+                                    <span class="ms-2 text-muted">{{ leave.applicant.task_area_fk.name }}</span>
+                                </div>
+                                <div class="leave-date mb-1">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    {{ leave.leave_start_date|date:"Y-m-d" }} 至 {{ leave.leave_end_date|date:"Y-m-d" }}
+                                    （{{ leave.duration_days }}天）
+                                </div>
+                                {% if leave.reason %}
+                                <div class="text-muted small">
+                                    <i class="fas fa-comment-alt me-1"></i>
+                                    {{ leave.reason|truncatewords:10 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <a href="{% url 'leave_management:application_detail' leave.id %}" 
+                               class="btn btn-sm btn-outline-info">
+                                查看
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    {% if planned_leaves.count > 5 %}
+                    <div class="text-center mt-3">
+                        <small class="text-muted">显示前5条，共{{ planned_leaves.count }}条计划休假</small>
+                    </div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-calendar-check"></i>
+                    <p class="mb-0">暂无计划休假</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- 正在休假 -->
+            <div class="section-card">
+                <h5 class="mb-3">
+                    <i class="fas fa-plane-departure text-success me-2"></i>正在休假
+                    <span class="badge bg-success ms-2">{{ on_leave.count }}</span>
+                </h5>
+                
+                {% if on_leave %}
+                <div class="leave-list">
+                    {% for leave in on_leave %}
+                    <div class="leave-card" style="border-left-color: #28a745;">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-user text-success me-2"></i>
+                                    <strong>{{ leave.applicant.get_full_name }}</strong>
+                                    <span class="ms-2 text-muted">|</span>
+                                    <span class="ms-2 text-muted">{{ leave.applicant.task_area_fk.name }}</span>
+                                </div>
+                                <div class="leave-date mb-1">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    {{ leave.leave_start_date|date:"m-d" }} 至 {{ leave.leave_end_date|date:"m-d" }}
+                                    （{{ leave.duration_days }}天）
+                                </div>
+                                {% if leave.reason %}
+                                <div class="text-muted small">
+                                    <i class="fas fa-comment-alt me-1"></i>
+                                    {{ leave.reason|truncatewords:10 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <a href="{% url 'leave_management:application_detail' leave.id %}" 
+                               class="btn btn-sm btn-outline-success">
+                                查看
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-user-clock"></i>
+                    <p class="mb-0">当前无人休假</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 右侧：历史记录 -->
+        <div class="col-lg-6">
+            <div class="section-card">
+                <h5 class="mb-3">
+                    <i class="fas fa-history text-secondary me-2"></i>最近记录
+                </h5>
+                
+                {% if history %}
+                <div class="leave-list">
+                    {% for leave in history %}
+                    <div class="leave-card" style="border-left-color: {% if leave.status == 'approved' %}#28a745{% elif leave.status == 'rejected' %}#dc3545{% else %}#6c757d{% endif %};">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-user me-2" style="color: {% if leave.status == 'approved' %}#28a745{% elif leave.status == 'rejected' %}#dc3545{% else %}#6c757d{% endif %};"></i>
+                                    <strong>{{ leave.applicant.get_full_name }}</strong>
+                                    <span class="ms-2">
+                                        {% if leave.status == 'approved' %}
+                                        <span class="badge bg-success">已批准</span>
+                                        {% elif leave.status == 'rejected' %}
+                                        <span class="badge bg-danger">已拒绝</span>
+                                        {% elif leave.status == 'cancelled' %}
+                                        <span class="badge bg-secondary">已取消</span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="leave-date mb-1">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    {{ leave.leave_start_date|date:"Y-m-d" }} 至 {{ leave.leave_end_date|date:"Y-m-d" }}
+                                    （{{ leave.duration_days }}天）
+                                </div>
+                                <div class="text-muted small">
+                                    <i class="fas fa-clock me-1"></i>
+                                    申请时间：{{ leave.created_at|date:"Y-m-d H:i" }}
+                                </div>
+                            </div>
+                            <a href="{% url 'leave_management:application_detail' leave.id %}" 
+                               class="btn btn-sm btn-outline-secondary">
+                                查看
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p class="mb-0">暂无历史记录</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 快速操作 -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="section-card">
+                <h5 class="mb-3">
+                    <i class="fas fa-bolt text-warning me-2"></i>快速操作
+                </h5>
+                <div class="d-flex gap-3">
+                    <a href="{% url 'leave_management:pending_approvals' %}" class="btn btn-primary">
+                        <i class="fas fa-tasks me-2"></i>处理待审批
+                    </a>
+                    <a href="{% url 'leave_management:export' %}" class="btn btn-success">
+                        <i class="fas fa-file-excel me-2"></i>导出记录
+                    </a>
+                    {% if user.role == 'superuser' %}
+                    <a href="{% url 'admin:index' %}" class="btn btn-secondary">
+                        <i class="fas fa-cog me-2"></i>系统设置
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // 自动刷新（可选，每5分钟刷新一次）
+    // setTimeout(function() {
+    //     location.reload();
+    // }, 300000);
+});
+</script>
+{% endblock %}

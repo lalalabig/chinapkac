@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}删除用户确认 - 员工管理系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="text-danger mb-3">
+                <i class="fas fa-exclamation-triangle me-2"></i>删除用户确认
+            </h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard:home' %}">主页</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard:user_management' %}">用户管理</a></li>
+                    <li class="breadcrumb-item active">删除用户</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-trash me-2"></i>危险操作确认
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-user-times fa-4x text-danger mb-3"></i>
+                        <h4>确定要删除用户吗？</h4>
+                        <p class="text-muted">此操作不可撤销</p>
+                    </div>
+                    
+                    <!-- 用户信息 -->
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-info-circle me-2"></i>即将删除的用户信息：</h6>
+                        <div class="row">
+                            <div class="col-sm-4"><strong>用户名：</strong></div>
+                            <div class="col-sm-8">{{ target_user.username }}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-4"><strong>姓名：</strong></div>
+                            <div class="col-sm-8">{{ target_user.first_name }} {{ target_user.last_name }}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-4"><strong>邮箱：</strong></div>
+                            <div class="col-sm-8">{{ target_user.email }}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-4"><strong>角色：</strong></div>
+                            <div class="col-sm-8">{{ target_user.get_role_display }}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-4"><strong>注册时间：</strong></div>
+                            <div class="col-sm-8">{{ target_user.date_joined|date:"Y-m-d H:i" }}</div>
+                        </div>
+                        {% if target_user.task_area_fk %}
+                        <div class="row">
+                            <div class="col-sm-4"><strong>任务区：</strong></div>
+                            <div class="col-sm-8">{{ target_user.task_area_fk.name }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- 警告信息 -->
+                    <div class="alert alert-danger">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>删除后将发生：</h6>
+                        <ul class="mb-0">
+                            <li>用户账户将被永久删除</li>
+                            <li>相关的个人数据将被清除</li>
+                            <li>该用户创建的内容可能会受到影响</li>
+                            <li>该用户将无法再登录系统</li>
+                            <li><strong>此操作无法撤销</strong></li>
+                        </ul>
+                    </div>
+                    
+                    <!-- 确认操作 -->
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="fas fa-trash me-2"></i>确认删除用户
+                            </button>
+                            <a href="{% url 'dashboard:user_management' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>取消，返回用户管理
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 帮助信息 -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title">
+                        <i class="fas fa-question-circle me-2"></i>删除用户须知
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="small">
+                        <h6>删除前请考虑：</h6>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fas fa-pause text-warning me-2"></i>
+                                <strong>停用账户</strong><br>
+                                <small class="text-muted">如果只是暂时不需要该用户，建议停用而非删除</small>
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-download text-info me-2"></i>
+                                <strong>数据备份</strong><br>
+                                <small class="text-muted">重要数据建议先备份再删除</small>
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-exchange-alt text-success me-2"></i>
+                                <strong>权限转移</strong><br>
+                                <small class="text-muted">确保重要权限已转移给其他用户</small>
+                            </li>
+                        </ul>
+                        
+                        <hr>
+                        
+                        <h6>替代方案：</h6>
+                        <div class="d-grid gap-2">
+                            {% if target_user and target_user.id %}
+                            <a href="{% url 'dashboard:edit_user' target_user.id %}" class="btn btn-sm btn-outline-warning">
+                                <i class="fas fa-edit me-1"></i>编辑用户
+                            </a>
+                            {% endif %}
+                            {% if target_user %}
+                            <button class="btn btn-sm btn-outline-info" onclick="deactivateUser()">
+                                <i class="fas fa-pause me-1"></i>停用账户
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="card-title">
+                        <i class="fas fa-shield-alt me-2"></i>安全提醒
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="small text-muted">
+                        <p>为了系统安全，建议：</p>
+                        <ul class="mb-0">
+                            <li>定期审查用户账户</li>
+                            <li>及时清理不活跃账户</li>
+                            <li>保持用户权限最小化原则</li>
+                            <li>记录重要操作日志</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deactivateUser() {
+    {% if target_user and target_user.username %}
+    if (confirm('确定要停用用户 {{ target_user.username }} 吗？停用后用户无法登录，但可以重新激活。')) {
+        // 创建一个表单来停用用户
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{% url "dashboard:edit_user" target_user.id %}';
+        
+        // 添加CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+        
+        // 添加用户数据
+        const userData = {
+            'username': '{{ target_user.username }}',
+            'email': '{{ target_user.email }}',
+            'first_name': '{{ target_user.first_name }}',
+            'last_name': '{{ target_user.last_name }}',
+            'phone_number': '{{ target_user.phone_number }}',
+            'department_rank': '{{ target_user.department_rank }}',
+            'task_area_name': '{{ target_user.task_area_fk.name|default:"" }}',
+            'role': '{{ target_user.role }}',
+            'is_active': ''  // 空值表示不选中，即停用
+        };
+        
+        for (const [key, value] of Object.entries(userData)) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = value;
+            form.appendChild(input);
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+    {% else %}
+    alert('无法停用用户：用户信息不完整');
+    {% endif %}
+}
+
+// 确认删除的二次确认
+document.querySelector('form').addEventListener('submit', function(e) {
+    {% if target_user and target_user.username %}
+    const confirmed = confirm('最后确认：您真的要删除用户 {{ target_user.username }} 吗？\n\n此操作不可撤销！');
+    if (!confirmed) {
+        e.preventDefault();
+    }
+    {% else %}
+    const confirmed = confirm('最后确认：您真的要删除此用户吗？\n\n此操作不可撤销！');
+    if (!confirmed) {
+        e.preventDefault();
+    }
+    {% endif %}
+});
+</script>
+{% endblock %}

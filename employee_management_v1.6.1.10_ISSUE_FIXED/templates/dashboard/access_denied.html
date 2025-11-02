@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}权限不足 - 员工管理系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="card border-danger">
+                <div class="card-body py-5">
+                    <i class="fas fa-shield-alt text-danger" style="font-size: 4rem;"></i>
+                    <h2 class="text-danger mt-3 mb-3">权限不足</h2>
+                    <p class="text-muted mb-4">
+                        抱歉，您当前的角色（{{ role_display }}）没有权限访问此页面。<br>
+                        请联系系统管理员获取相应权限。
+                    </p>
+                    
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>提示：</strong>不同角色具有不同的系统访问权限，请确保您在访问相应的功能页面。
+                    </div>
+                    
+                    <div class="mt-4">
+                        <a href="{% url 'dashboard:home' %}" class="btn btn-un-blue me-2">
+                            <i class="fas fa-home me-1"></i>返回首页
+                        </a>
+                        <button onclick="history.back()" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>返回上页
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 权限说明 -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-info-circle me-2"></i>权限说明
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-start">
+                        <div class="col-md-6">
+                            <h6 class="text-success">
+                                <i class="fas fa-user me-2"></i>普通员工
+                            </h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success me-2"></i>查看仪表盘</li>
+                                <li><i class="fas fa-check text-success me-2"></i>申请请假</li>
+                                <li><i class="fas fa-check text-success me-2"></i>上传报告</li>
+                                <li><i class="fas fa-check text-success me-2"></i>更新位置</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-warning">
+                                <i class="fas fa-user-tie me-2"></i>分公司负责人
+                            </h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success me-2"></i>普通员工所有权限</li>
+                                <li><i class="fas fa-check text-success me-2"></i>审批请假</li>
+                                <li><i class="fas fa-check text-success me-2"></i>查看团队报告</li>
+                                <li><i class="fas fa-check text-success me-2"></i>管理团队位置</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6 mt-3">
+                            <h6 class="text-info">
+                                <i class="fas fa-user-crown me-2"></i>总部负责人
+                            </h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success me-2"></i>分公司负责人所有权限</li>
+                                <li><i class="fas fa-check text-success me-2"></i>管理用户</li>
+                                <li><i class="fas fa-check text-success me-2"></i>查看统计报表</li>
+                                <li><i class="fas fa-check text-success me-2"></i>发送系统警报</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6 mt-3">
+                            <h6 class="text-danger">
+                                <i class="fas fa-user-shield me-2"></i>超级管理员
+                            </h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success me-2"></i>总部负责人所有权限</li>
+                                <li><i class="fas fa-check text-success me-2"></i>系统设置</li>
+                                <li><i class="fas fa-check text-success me-2"></i>数据管理</li>
+                                <li><i class="fas fa-check text-success me-2"></i>完整系统控制</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

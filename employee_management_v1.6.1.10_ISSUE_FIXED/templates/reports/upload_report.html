@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}上传报告 - 员工管理系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="text-un-blue mb-0">
+                <i class="fas fa-file-upload me-2"></i>上传报告
+            </h2>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">报告信息</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="report_type" class="form-label">报告类型 <span class="text-danger">*</span></label>
+                                <select class="form-control" id="report_type" name="report_type" required>
+                                    <option value="">请选择报告类型</option>
+                                    {% for type_value, type_label in report_types %}
+                                        <option value="{{ type_value }}">{{ type_label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="report_period" class="form-label">报告时期 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="report_period" name="report_period" 
+                                       placeholder="例如：2024年10月" required>
+                            </div>
+                        </div>
+
+                        <!-- 任务区已自动从用户账号获取，无需手动选择 -->
+                        
+                        <div class="mb-3">
+                            <label for="report_file" class="form-label">报告文件 <span class="text-danger">*</span></label>
+                            <input type="file" class="form-control" id="report_file" name="report_file" 
+                                   accept=".pdf,.doc,.docx,.xls,.xlsx" required>
+                            <small class="form-text text-muted">
+                                支持的文件格式：PDF, Word文档, Excel表格（最大20MB）
+                            </small>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'reports:my_reports' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>返回
+                            </a>
+                            <button type="submit" class="btn btn-un-blue">
+                                <i class="fas fa-upload me-2"></i>上传报告
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

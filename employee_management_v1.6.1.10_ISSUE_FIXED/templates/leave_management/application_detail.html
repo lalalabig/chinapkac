@@ -1,0 +1,352 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}请假申请详情{% endblock %}
+
+{% block extra_css %}
+<style>
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 12px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    .status-pending { background-color: #ffc107; color: #212529; }
+    .status-approved { background-color: #28a745; color: white; }
+    .status-rejected { background-color: #dc3545; color: white; }
+    .status-cancelled { background-color: #6c757d; color: white; }
+    
+    .info-section {
+        background-color: #f8f9fa;
+        border-left: 4px solid #007bff;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .flight-card {
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .timeline {
+        position: relative;
+        padding-left: 40px;
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-bottom: 30px;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -28px;
+        top: 8px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #007bff;
+        border: 3px solid #fff;
+        box-shadow: 0 0 0 2px #007bff;
+    }
+    
+    .timeline-item::after {
+        content: '';
+        position: absolute;
+        left: -23px;
+        top: 20px;
+        width: 2px;
+        height: calc(100% - 12px);
+        background-color: #dee2e6;
+    }
+    
+    .timeline-item:last-child::after {
+        display: none;
+    }
+    
+    .timeline-item.approved::before {
+        background-color: #28a745;
+        box-shadow: 0 0 0 2px #28a745;
+    }
+    
+    .timeline-item.rejected::before {
+        background-color: #dc3545;
+        box-shadow: 0 0 0 2px #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>
+                    <i class="fas fa-file-alt"></i> 请假申请详情
+                </h2>
+                <div>
+                    <a href="javascript:history.back()" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> 返回
+                    </a>
+                    {% if can_approve %}
+                        <a href="{% url 'leave_management:approve_application' application.id %}" class="btn btn-primary">
+                            <i class="fas fa-check-circle"></i> 立即审批
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 申请状态 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1">申请状态</h5>
+                            <span class="status-badge status-{{ application.status }}">
+                                {{ application.get_status_display }}
+                            </span>
+                        </div>
+                        <div class="text-end">
+                            <small class="text-muted">申请时间</small><br>
+                            <strong>{{ application.application_date|date:"Y年m月d日 H:i" }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- 左侧：申请信息 -->
+        <div class="col-md-8">
+            <!-- 基本信息 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-user"></i> 申请人信息</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>姓名：</strong>{{ application.applicant.get_full_name }}</p>
+                            <p><strong>用户名：</strong>{{ application.applicant.username }}</p>
+                            <p><strong>角色：</strong>{{ application.applicant.get_role_display }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>所属任务区：</strong>
+                                {% if application.applicant.task_area_fk %}
+                                    {{ application.applicant.task_area_fk.name }}
+                                {% else %}
+                                    <span class="text-muted">未设置</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>邮箱：</strong>{{ application.applicant.email|default:"未设置" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 请假信息 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-calendar-alt"></i> 请假信息</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <small class="text-muted">请假开始日期</small>
+                                <h5 class="mb-0">{{ application.leave_start_date|date:"Y年m月d日" }}</h5>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <small class="text-muted">请假结束日期</small>
+                                <h5 class="mb-0">{{ application.leave_end_date|date:"Y年m月d日" }}</h5>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p><strong>请假天数：</strong>{{ application.duration_days }} 天</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>休假地点：</strong>{{ application.leave_location }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <p><strong>请假原因：</strong></p>
+                            <div class="alert alert-info">
+                                {{ application.leave_reason }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 回国行程 -->
+            {% if outbound_flights %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-plane-departure"></i> 回国行程</h5>
+                </div>
+                <div class="card-body">
+                    {% for flight in outbound_flights %}
+                    <div class="flight-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">
+                                    <span class="badge bg-primary">第{{ flight.sequence }}程</span>
+                                    {{ flight.departure }} → {{ flight.destination }}
+                                </h6>
+                                <p class="mb-0">
+                                    <small class="text-muted">
+                                        航班号：{{ flight.flight_number }} | 
+                                        日期：{{ flight.flight_date|date:"Y-m-d" }}
+                                        {% if flight.flight_time %}| 时间：{{ flight.flight_time }}{% endif %}
+                                    </small>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 返回行程 -->
+            {% if return_flights %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-plane-arrival"></i> 返回行程</h5>
+                </div>
+                <div class="card-body">
+                    {% for flight in return_flights %}
+                    <div class="flight-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">
+                                    <span class="badge bg-success">第{{ flight.sequence }}程</span>
+                                    {{ flight.departure }} → {{ flight.destination }}
+                                </h6>
+                                <p class="mb-0">
+                                    <small class="text-muted">
+                                        航班号：{{ flight.flight_number }} | 
+                                        日期：{{ flight.flight_date|date:"Y-m-d" }}
+                                        {% if flight.flight_time %}| 时间：{{ flight.flight_time }}{% endif %}
+                                    </small>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 拒绝/取消原因 -->
+            {% if application.status == 'rejected' and application.rejection_reason %}
+            <div class="card mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-times-circle"></i> 拒绝原因</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ application.rejection_reason }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if application.status == 'cancelled' and application.cancellation_reason %}
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-ban"></i> 取消原因</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ application.cancellation_reason }}</p>
+                    <small class="text-muted">取消时间：{{ application.cancellation_date|date:"Y-m-d H:i" }}</small>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- 右侧：审批流程 -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-history"></i> 审批记录</h5>
+                </div>
+                <div class="card-body">
+                    {% if approval_records %}
+                        <div class="timeline">
+                            {% for record in approval_records %}
+                            <div class="timeline-item {{ record.action }}">
+                                <div class="mb-1">
+                                    <strong>
+                                        {% if record.action == 'submitted' %}
+                                            <i class="fas fa-paper-plane text-primary"></i> 提交申请
+                                        {% elif record.action == 'approved' %}
+                                            <i class="fas fa-check-circle text-success"></i> 批准
+                                        {% elif record.action == 'rejected' %}
+                                            <i class="fas fa-times-circle text-danger"></i> 拒绝
+                                        {% elif record.action == 'cancelled' %}
+                                            <i class="fas fa-ban text-secondary"></i> 取消
+                                        {% endif %}
+                                    </strong>
+                                </div>
+                                <p class="mb-1">
+                                    <small><strong>操作人：</strong>{{ record.approver.get_full_name }}</small>
+                                </p>
+                                {% if record.comment %}
+                                <p class="mb-1">
+                                    <small><strong>备注：</strong>{{ record.comment }}</small>
+                                </p>
+                                {% endif %}
+                                <p class="mb-0">
+                                    <small class="text-muted">{{ record.action_date|date:"Y-m-d H:i" }}</small>
+                                </p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">暂无审批记录</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            {% if can_approve %}
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="mb-3">快捷操作</h6>
+                    <a href="{% url 'leave_management:approve_application' application.id %}" class="btn btn-success w-100 mb-2">
+                        <i class="fas fa-check"></i> 批准申请
+                    </a>
+                    <a href="{% url 'leave_management:approve_application' application.id %}" class="btn btn-danger w-100">
+                        <i class="fas fa-times"></i> 拒绝申请
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if can_cancel %}
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="mb-3">申请人操作</h6>
+                    <a href="{% url 'leave_management:cancel_application' application.id %}" class="btn btn-warning w-100">
+                        <i class="fas fa-ban"></i> 取消申请
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
