@@ -1,0 +1,487 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}主页 - 员工管理系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 欢迎信息 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="text-un-blue mb-1">
+                        <img src="{% static 'images/un_emblem_blue.png' %}" alt="UN" style="height: 36px; width: 36px;" class="me-2">
+                        主页
+                    </h2>
+                    <p class="text-muted mb-0">欢迎回来，{{ user.username }}！您的角色是 {{ role_display }}</p>
+                </div>
+                <div class="text-end">
+                    <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        {{ current_time|date:"Y年n月j日 H:i" }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 数据统计卡片 - 仅管理员角色显示 -->
+    {% if user.role >= 3 %}
+    <!-- 请假统计卡片 -->
+    {% if leave_statistics %}
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stat-card fade-in-up" style="animation-delay: 0.4s; background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);">
+                <i class="fas fa-clipboard-list fa-2x mb-2"></i>
+                <div class="stat-number">{{ leave_statistics.total_applications }}</div>
+                <div class="stat-label">总申请数</div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stat-card fade-in-up" style="animation-delay: 0.5s; background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);">
+                <i class="fas fa-clock fa-2x mb-2"></i>
+                <div class="stat-number">{{ leave_statistics.pending_applications }}</div>
+                <div class="stat-label">待审批</div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stat-card fade-in-up" style="animation-delay: 0.6s; background: linear-gradient(135deg, #28a745 0%, #218838 100%);">
+                <i class="fas fa-check-circle fa-2x mb-2"></i>
+                <div class="stat-number">{{ leave_statistics.approved_applications }}</div>
+                <div class="stat-label">已批准</div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stat-card fade-in-up" style="animation-delay: 0.7s; background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                <i class="fas fa-times-circle fa-2x mb-2"></i>
+                <div class="stat-number">{{ leave_statistics.rejected_applications }}</div>
+                <div class="stat-label">已拒绝</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- 请假统计卡片 -->
+    {% if leave_statistics %}
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stat-card fade-in-up" style="animation-delay: 0.4s; background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);">
+                <i class="fas fa-clipboard-list fa-2x mb-2"></i>
+                <div class="stat-number">{{ leave_statistics.total_applications }}</div>
+                <div class="stat-label">总申请数</div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stat-card fade-in-up" style="animation-delay: 0.5s; background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);">
+                <i class="fas fa-clock fa-2x mb-2"></i>
+                <div class="stat-number">{{ leave_statistics.pending_applications }}</div>
+                <div class="stat-label">待审批</div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stat-card fade-in-up" style="animation-delay: 0.6s; background: linear-gradient(135deg, #28a745 0%, #218838 100%);">
+                <i class="fas fa-check-circle fa-2x mb-2"></i>
+                <div class="stat-number">{{ leave_statistics.approved_applications }}</div>
+                <div class="stat-label">已批准</div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stat-card fade-in-up" style="animation-delay: 0.7s; background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                <i class="fas fa-times-circle fa-2x mb-2"></i>
+                <div class="stat-number">{{ leave_statistics.rejected_applications }}</div>
+                <div class="stat-label">已拒绝</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stat-card fade-in-up">
+                <i class="fas fa-users fa-2x mb-2"></i>
+                <div class="stat-number">{{ total_users }}</div>
+                <div class="stat-label">总用户数</div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stat-card fade-in-up" style="animation-delay: 0.1s; background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                <i class="fas fa-user-check fa-2x mb-2"></i>
+                <div class="stat-number">{{ active_users }}</div>
+                <div class="stat-label">活跃用户</div>
+            </div>
+        </div>
+        
+        {% if user.role == 4 %}
+        <!-- 仅超级管理员显示管理人员统计 -->
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stat-card fade-in-up" style="animation-delay: 0.2s; background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);">
+                <i class="fas fa-user-tie fa-2x mb-2"></i>
+                <div class="stat-number">{{ user_stats.head_manager|add:user_stats.task_area_manager }}</div>
+                <div class="stat-label">管理人员</div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stat-card fade-in-up" style="animation-delay: 0.3s; background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);">
+                <i class="fas fa-user-friends fa-2x mb-2"></i>
+                <div class="stat-number">{{ user_stats.employee }}</div>
+                <div class="stat-label">普通员工</div>
+            </div>
+        </div>
+        {% else %}
+        <!-- 总部负责人显示团队规模 -->
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stat-card fade-in-up" style="animation-delay: 0.2s; background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);">
+                <i class="fas fa-building fa-2x mb-2"></i>
+                <div class="stat-number">{{ user_stats.task_area_manager }}</div>
+                <div class="stat-label">任务区数</div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stat-card fade-in-up" style="animation-delay: 0.3s; background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);">
+                <i class="fas fa-user-friends fa-2x mb-2"></i>
+                <div class="stat-number">{{ user_stats.employee }}</div>
+                <div class="stat-label">团队成员</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <div class="row">
+        <!-- 快捷操作 -->
+        <div class="col-xl-8 col-lg-7 mb-4">
+            <div class="card fade-in-up">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-bolt me-2"></i>快捷操作
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- 请假申请 - 根据权限显示 -->
+                        {% if user_permissions.can_apply_leave %}
+                        <div class="col-md-4 mb-3">
+                            <a href="{% url 'leave_management:apply_leave' %}" class="btn btn-outline-un-blue w-100 h-100 d-flex flex-column justify-content-center align-items-center py-3">
+                                <i class="fas fa-calendar-plus fa-2x mb-2"></i>
+                                <span>请假申请</span>
+                            </a>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- 报告功能 - 根据角色权限显示 -->
+                        {% if user.role == 'employee' %}
+                        <!-- 普通员工：只显示上传报告 -->
+                        <div class="col-md-4 mb-3">
+                            <a href="{% url 'reports:upload' %}" class="btn btn-outline-un-blue w-100 h-100 d-flex flex-column justify-content-center align-items-center py-3">
+                                <i class="fas fa-file-upload fa-2x mb-2"></i>
+                                <span>上传报告</span>
+                            </a>
+                        </div>
+                        
+                        {% elif user.role == 'task_area_manager' %}
+                        <!-- 任务区负责人：既要上传也要查看 -->
+                        <div class="col-md-4 mb-3">
+                            <a href="{% url 'reports:upload' %}" class="btn btn-outline-un-blue w-100 h-100 d-flex flex-column justify-content-center align-items-center py-3">
+                                <i class="fas fa-file-upload fa-2x mb-2"></i>
+                                <span>上传报告</span>
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <a href="{% url 'reports:manage_reports' %}" class="btn btn-outline-un-blue w-100 h-100 d-flex flex-column justify-content-center align-items-center py-3">
+                                <i class="fas fa-clipboard-list fa-2x mb-2"></i>
+                                <span>工作报告</span>
+                            </a>
+                        </div>
+                        
+                        {% elif user.role == 'head_manager' or user.role == 'superuser' %}
+                        <!-- 总部负责人和超级管理员：只显示工作报告（查看下级） -->
+                        <div class="col-md-4 mb-3">
+                            <a href="{% url 'reports:manage_reports' %}" class="btn btn-outline-un-blue w-100 h-100 d-flex flex-column justify-content-center align-items-center py-3">
+                                <i class="fas fa-clipboard-list fa-2x mb-2"></i>
+                                <span>工作报告</span>
+                            </a>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- 位置功能 - 只有员工和任务区负责人可以更新自己的位置 -->
+                        {% if user_permissions.can_update_location %}
+                        <div class="col-md-4 mb-3">
+                            <a href="{% url 'location:update_location' %}" class="btn btn-outline-un-blue w-100 h-100 d-flex flex-column justify-content-center align-items-center py-3">
+                                <i class="fas fa-map-marker-alt fa-2x mb-2"></i>
+                                <span>更新位置</span>
+                            </a>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- 审批管理 - 管理员权限 -->
+                        {% if user_permissions.can_approve_leave %}
+                        <div class="col-md-4 mb-3">
+                            <a href="{% url 'leave_management:pending_approvals' %}" class="btn btn-outline-un-blue w-100 h-100 d-flex flex-column justify-content-center align-items-center py-3">
+                                <i class="fas fa-check-circle fa-2x mb-2"></i>
+                                <span>审批管理</span>
+                            </a>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- 超级管理员用户管理 -->
+                        {% if user.is_superuser_role %}
+                        <div class="col-md-4 mb-3">
+                            <a href="{% url 'usermanagement:user_list' %}" class="btn btn-outline-un-blue w-100 h-100 d-flex flex-column justify-content-center align-items-center py-3">
+                                <i class="fas fa-users-cog fa-2x mb-2"></i>
+                                <span>用户管理</span>
+                            </a>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- 传统用户管理 - 高级管理员权限 -->
+                        {% if user_permissions.can_manage_employees %}
+                        <div class="col-md-4 mb-3">
+                            <a href="{% url 'dashboard:user_management' %}" class="btn btn-outline-un-blue w-100 h-100 d-flex flex-column justify-content-center align-items-center py-3">
+                                <i class="fas fa-user-plus fa-2x mb-2"></i>
+                                <span>团队管理</span>
+                            </a>
+                        </div>
+                        {% endif %}
+                        
+
+                        
+                        <!-- 员工列表 - 任务区负责人及以上 -->
+                        {% if user_permissions.can_view_reports %}
+                        <div class="col-md-4 mb-3">
+                            <a href="{% url 'dashboard:team_management' %}" class="btn btn-outline-un-blue w-100 h-100 d-flex flex-column justify-content-center align-items-center py-3">
+                                <i class="fas fa-list-ul fa-2x mb-2"></i>
+                                <span>员工列表</span>
+                            </a>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- 紧急报警 - 所有用户都可以使用 -->
+                        <div class="col-md-4 mb-3">
+                            <a href="{% url 'emergency:create_alert' %}" class="btn btn-outline-danger w-100 h-100 d-flex flex-column justify-content-center align-items-center py-3">
+                                <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                                <span>紧急报警</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 最近活动 -->
+        <div class="col-xl-4 col-lg-5 mb-4">
+            <div class="card fade-in-up">
+                <div class="card-header">
+                    <h6 class="card-title">
+                        <i class="fas fa-history me-2"></i>最近登录用户
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for recent_user in recent_logins %}
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="me-3">
+                            <i class="fas fa-user-circle fa-lg text-un-blue"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">{{ recent_user.username }}</div>
+                            <small class="text-muted">{{ recent_user.get_role_display }}</small>
+                        </div>
+                        <div class="text-end">
+                            <small class="text-muted">{{ recent_user.last_login|timesince }}前</small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center">暂无登录记录</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 组织架构统计 -->
+    <div class="row">
+        {% if user.role == 4 %}
+        <!-- 角色分布 - 仅超级管理员可见 -->
+        <div class="col-md-6 mb-4">
+            <div class="card fade-in-up">
+                <div class="card-header">
+                    <h6 class="card-title">
+                        <i class="fas fa-chart-pie me-2"></i>角色分布
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6 text-center mb-3">
+                            <div class="border rounded p-3">
+                                <h4 class="text-un-blue mb-1">{{ user_stats.superuser }}</h4>
+                                <small class="text-muted">超级管理员</small>
+                            </div>
+                        </div>
+                        <div class="col-6 text-center mb-3">
+                            <div class="border rounded p-3">
+                                <h4 class="text-success mb-1">{{ user_stats.head_manager }}</h4>
+                                <small class="text-muted">总部负责人</small>
+                            </div>
+                        </div>
+                        <div class="col-6 text-center">
+                            <div class="border rounded p-3">
+                                <h4 class="text-warning mb-1">{{ user_stats.task_area_manager }}</h4>
+                                <small class="text-muted">任务区负责人</small>
+                            </div>
+                        </div>
+                        <div class="col-6 text-center">
+                            <div class="border rounded p-3">
+                                <h4 class="text-info mb-1">{{ user_stats.employee }}</h4>
+                                <small class="text-muted">普通员工</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if user.role >= 3 %}
+        <!-- 任务区分布 - 总部负责人及以上可见 -->
+        <div class="col-md-6 mb-4">
+            <div class="card fade-in-up">
+                <div class="card-header">
+                    <h6 class="card-title">
+                        <i class="fas fa-map me-2"></i>任务区分布
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for area in task_area_stats %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>{{ area.task_area_fk__name|default:"未设置" }}</span>
+                        <span class="badge bg-un-blue">{{ area.count }}</span>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center">暂无任务区数据</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if user.role >= 1 and user.role < 3 %}
+        <!-- 普通员工、任务区负责人、总部负责人显示个人工作区域 -->
+        <div class="col-md-6 mb-4">
+            <div class="card fade-in-up">
+                <div class="card-header">
+                    <h6 class="card-title">
+                        <i class="fas fa-user-circle me-2"></i>我的工作信息
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-12 text-center mb-3">
+                            <div class="border rounded p-3">
+                                {% if user.role == 'superuser' %}
+                                    <h5 class="text-muted mb-1">-</h5>
+                                    <small class="text-muted">超级管理员</small>
+                                {% elif user.role == 'head_manager' %}
+                                    <h5 class="text-un-blue mb-1">
+                                        {% for area in user.managed_task_areas.all %}
+                                            {{ area.name }}{% if not forloop.last %}, {% endif %}
+                                        {% empty %}
+                                            未分配
+                                        {% endfor %}
+                                    </h5>
+                                    <small class="text-muted">管辖任务区</small>
+                                {% else %}
+                                    <h5 class="text-un-blue mb-1">{{ user.task_area_fk.name|default:"未设置" }}</h5>
+                                    <small class="text-muted">我的任务区</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-12 text-center">
+                            <div class="border rounded p-3">
+                                <h5 class="text-success mb-1">{{ user.department_rank|default:"未设置" }}</h5>
+                                <small class="text-muted">我的部门</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 显示系统使用指南 -->
+        <div class="col-md-6 mb-4">
+            <div class="card fade-in-up">
+                <div class="card-header">
+                    <h6 class="card-title">
+                        <i class="fas fa-lightbulb me-2"></i>系统功能指南
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>点击"个人资料"查看和编辑您的信息</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>使用"上传报告"提交工作报告</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>通过"更新位置"分享您的位置</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>如有紧急情况请使用"紧急报警"</li>
+                        {% if user.role >= 2 %}
+                        <li class="mb-2"><i class="fas fa-check text-warning me-2"></i>您可以审批下属的请假申请</li>
+                        {% endif %}
+                        {% if user.role >= 3 %}
+                        <li class="mb-2"><i class="fas fa-check text-info me-2"></i>您可以查看统计报表和管理用户</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 页面加载动画
+document.addEventListener('DOMContentLoaded', function() {
+    // 动态显示数据
+    const stats = document.querySelectorAll('.stat-number');
+    stats.forEach((stat, index) => {
+        const finalValue = parseInt(stat.textContent);
+        let currentValue = 0;
+        const increment = finalValue / 50;
+        
+        setTimeout(() => {
+            const timer = setInterval(() => {
+                currentValue += increment;
+                if (currentValue >= finalValue) {
+                    stat.textContent = finalValue;
+                    clearInterval(timer);
+                } else {
+                    stat.textContent = Math.floor(currentValue);
+                }
+            }, 20);
+        }, index * 200);
+    });
+});
+
+// 定时刷新时间
+setInterval(() => {
+    const now = new Date();
+    const timeString = now.getFullYear() + '年' + 
+                      (now.getMonth() + 1) + '月' + 
+                      now.getDate() + '日 ' + 
+                      now.getHours().toString().padStart(2, '0') + ':' + 
+                      now.getMinutes().toString().padStart(2, '0');
+    
+    const timeElement = document.querySelector('.fa-clock').parentElement;
+    if (timeElement) {
+        timeElement.innerHTML = '<i class="fas fa-clock me-1"></i>' + timeString;
+    }
+}, 60000); // 每分钟更新
+</script>
+{% endblock %}
