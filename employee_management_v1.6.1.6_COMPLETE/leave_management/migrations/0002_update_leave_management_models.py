@@ -1,0 +1,99 @@
+# Generated migration for leave management system v1.5.0
+
+from django.conf import settings
+from django.db import migrations, models
+import django.db.models.deletion
+from django.utils import timezone
+
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        ('leave_management', '0001_initial'),
+    ]
+
+    operations = [
+        # 删除旧的 LeaveApplication 表（如果存在）
+        migrations.DeleteModel(
+            name='LeaveApplication',
+        ),
+        
+        # 创建新的 LeaveApplication 模型
+        migrations.CreateModel(
+            name='LeaveApplication',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('leave_start_date', models.DateField(verbose_name='休假开始日期')),
+                ('leave_end_date', models.DateField(verbose_name='休假结束日期')),
+                ('application_date', models.DateTimeField(auto_now_add=True, verbose_name='申请时间')),
+                ('leave_location', models.CharField(max_length=200, verbose_name='休假地点名称')),
+                ('leave_latitude', models.DecimalField(blank=True, decimal_places=6, max_digits=9, null=True, verbose_name='休假地纬度')),
+                ('leave_longitude', models.DecimalField(blank=True, decimal_places=6, max_digits=9, null=True, verbose_name='休假地经度')),
+                ('leave_reason', models.TextField(verbose_name='休假原因')),
+                ('status', models.CharField(choices=[('draft', '草稿'), ('pending_task_area', '待任务区负责人审批'), ('pending_head', '待总部负责人审批'), ('approved', '已批准'), ('rejected', '已拒绝'), ('cancelled', '已取消')], default='draft', max_length=30, verbose_name='审批状态')),
+                ('task_area_manager_approved', models.BooleanField(default=False, verbose_name='任务区负责人是否已批准')),
+                ('task_area_manager_approval_date', models.DateTimeField(blank=True, null=True, verbose_name='任务区负责人审批时间')),
+                ('head_manager_approved', models.BooleanField(default=False, verbose_name='总部负责人是否已批准')),
+                ('head_manager_approval_date', models.DateTimeField(blank=True, null=True, verbose_name='总部负责人审批时间')),
+                ('rejection_reason', models.TextField(blank=True, verbose_name='拒绝原因')),
+                ('cancellation_requested', models.BooleanField(default=False, verbose_name='是否申请取消')),
+                ('cancellation_reason', models.TextField(blank=True, verbose_name='取消原因')),
+                ('cancellation_date', models.DateTimeField(blank=True, null=True, verbose_name='取消申请时间')),
+                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='创建时间')),
+                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='更新时间')),
+                ('applicant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='leave_applications', to=settings.AUTH_USER_MODEL, verbose_name='申请人')),
+                ('current_approver', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='pending_leave_approvals', to=settings.AUTH_USER_MODEL, verbose_name='当前审批人')),
+                ('head_manager_approver', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='head_leave_approvals', to=settings.AUTH_USER_MODEL, verbose_name='总部负责人')),
+                ('task_area_manager_approver', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='task_area_leave_approvals', to=settings.AUTH_USER_MODEL, verbose_name='任务区负责人')),
+            ],
+            options={
+                'verbose_name': '请假申请',
+                'verbose_name_plural': '请假申请',
+                'db_table': 'leave_applications',
+                'ordering': ['-created_at'],
+            },
+        ),
+        
+        # 创建 FlightSegment 模型
+        migrations.CreateModel(
+            name='FlightSegment',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('segment_type', models.CharField(choices=[('outbound', '回国行程'), ('return', '返回任务区行程')], max_length=10, verbose_name='行程类型')),
+                ('sequence', models.PositiveIntegerField(default=1, verbose_name='行程段序号')),
+                ('departure', models.CharField(max_length=100, verbose_name='出发地')),
+                ('destination', models.CharField(max_length=100, verbose_name='目的地')),
+                ('flight_number', models.CharField(max_length=20, verbose_name='航班号')),
+                ('flight_date', models.DateField(verbose_name='航班日期')),
+                ('flight_time', models.TimeField(blank=True, null=True, verbose_name='航班时间')),
+                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='创建时间')),
+                ('leave_application', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='flight_segments', to='leave_management.leaveapplication', verbose_name='关联请假申请')),
+            ],
+            options={
+                'verbose_name': '机票行程段',
+                'verbose_name_plural': '机票行程段',
+                'db_table': 'flight_segments',
+                'ordering': ['segment_type', 'sequence'],
+            },
+        ),
+        
+        # 创建 ApprovalRecord 模型
+        migrations.CreateModel(
+            name='ApprovalRecord',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('action', models.CharField(choices=[('approved', '批准'), ('rejected', '拒绝'), ('cancelled', '取消'), ('submitted', '提交')], max_length=20, verbose_name='操作')),
+                ('comment', models.TextField(blank=True, verbose_name='审批意见')),
+                ('approval_date', models.DateTimeField(auto_now_add=True, verbose_name='审批时间')),
+                ('approver', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL, verbose_name='审批人')),
+                ('leave_application', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='approval_records', to='leave_management.leaveapplication', verbose_name='关联请假申请')),
+            ],
+            options={
+                'verbose_name': '审批记录',
+                'verbose_name_plural': '审批记录',
+                'db_table': 'approval_records',
+                'ordering': ['-approval_date'],
+            },
+        ),
+    ]

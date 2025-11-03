@@ -5,8 +5,8 @@ Generated for Python Django 4.x
 """
 
 from pathlib import Path
-import dj_database_url
 import os
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -79,9 +79,8 @@ WSGI_APPLICATION = 'employee_management.wsgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
-    'default': dj_database_url.config(default='sqlite:///db.sqlite3')
+    'default': dj_database_url.config(default=os.getenv('DATABASE_URL'))
 }
-
 
 # Alternative SQLite configuration for development
 # DATABASES = {
@@ -130,7 +129,6 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
-
 
 # Media files
 MEDIA_URL = '/media/'

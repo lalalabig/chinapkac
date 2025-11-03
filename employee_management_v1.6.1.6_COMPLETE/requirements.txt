@@ -4,8 +4,7 @@ python-dateutil>=2.8.0
 pytz>=2023.3
 requests>=2.31.0
 pypinyin>=0.49.0
-openpyxl
-dj-database-url
+dj_database_url
 
 # PostgreSQL 数据库支持
 psycopg2-binary>=2.9.0
