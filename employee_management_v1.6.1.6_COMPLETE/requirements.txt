@@ -5,6 +5,7 @@ pytz>=2023.3
 requests>=2.31.0
 pypinyin>=0.49.0
 dj_database_url
+openpyxl
 
 # PostgreSQL 数据库支持
 psycopg2-binary>=2.9.0
